@@ -25,7 +25,7 @@ to this problem:
 
 1.  If `~/.bash_completion` doesn't exist, create it.
 
-2.  Paste the content of `completions/bash_completion` into
+2.  Paste the content of `completions/bash_completion.sh` into
     `~/.bash_completion`.
 
 3.  Complete an alias with:
