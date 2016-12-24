@@ -49,6 +49,7 @@ In `~/.bash_completion`:
 
 Now typing `<Tab>` after `sctl<space>` will show `systemctl` commands:
 
+    $ sctl <Tab>
     add-requires
     add-wants
     cancel
