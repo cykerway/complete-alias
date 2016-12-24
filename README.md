@@ -6,10 +6,18 @@ Programmable completion function for shell aliases.
 
 Users often don't have a way to complete custom shell aliases.
 
-This program **universally** solves this problem.
+This program provides a **generic**, **universal** and **programmatic** solution
+to this problem:
 
-Universality means a single function works with all aliases and users don't have
-to define a different function for each alias.
+-   It is **generic**. The program works with all commonly defined aliases, even
+    those with leading redirections.
+
+-   It is **universal**. The same program completes all aliases blindly and
+    users don't have to define different completion functions for different
+    aliases.
+
+-   It is **programmatic**. Aliases are completed automatically by machine
+    without human intervention.
 
 # Installation & Usage
 
