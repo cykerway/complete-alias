@@ -8,6 +8,9 @@ Users often don't have a way to complete custom shell aliases.
 
 This program **universally** solves this problem.
 
+Universality means a single function works with all aliases and users don't have
+to define a different function for each alias.
+
 # Installation & Usage
 
 ## Bash
