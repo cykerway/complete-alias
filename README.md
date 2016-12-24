@@ -12,7 +12,7 @@ to this problem:
 -   It is **generic**. The program works with all commonly defined aliases, even
     those with leading redirections and those aliasing to themselves.
 
--   It is **universal**. A single program completes all aliases blindly, which
+-   It is **universal**. A single function completes all aliases blindly, which
     means users don't have to define different completion functions for
     different aliases.
 
