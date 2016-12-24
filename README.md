@@ -20,6 +20,21 @@ This program **universally** solves this problem.
 
         complete -F _complete_alias <myalias>
 
+# Example
+
+## Bash
+
+In `.bash_profile`:
+
+    alias sctl='systemctl'
+
+In `.bash_completion`:
+
+    complete -F _complete_alias sctl
+
+Now typing `<Tab>` after `sctl<space>` will show `systemctl` commands (provided
+`systemctl` completion exists and works).
+
 # LICENSE
 
 The source code is licensed under the [GNU General Public License v3.0][GPLv3].
