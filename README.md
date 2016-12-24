@@ -10,14 +10,14 @@ This program provides a **generic**, **universal** and **programmatic** solution
 to this problem:
 
 -   It is **generic**. The program works with all commonly defined aliases, even
-    those with leading redirections.
+    those with leading redirections and those aliasing to themselves.
 
--   It is **universal**. The same program completes all aliases blindly and
-    users don't have to define different completion functions for different
-    aliases.
+-   It is **universal**. A single program completes all aliases blindly, which
+    means users don't have to define different completion functions for
+    different aliases.
 
--   It is **programmatic**. Aliases are completed automatically by machine
-    without human intervention.
+-   It is **programmatic**. Aliases are completed automatically by the program
+    as you type without any human intervention.
 
 # Installation & Usage
 
@@ -25,26 +25,36 @@ to this problem:
 
 1.  If `~/.bash_completion` doesn't exist, create it.
 
-2.  Paste the content of `completions/bash_completion` in `~/.bash_completion`.
+2.  Paste the content of `completions/bash_completion` into
+    `~/.bash_completion`.
 
-3.  Complete aliases with:
+3.  Complete an alias with:
 
         complete -F _complete_alias <myalias>
+
+    Multiple aliases can be specified one per line, or as arguments on a single
+    line.
 
 # Example
 
 ## Bash
 
-In `.bash_profile`:
+In `~/.bash_profile`:
 
     alias sctl='systemctl'
 
-In `.bash_completion`:
+In `~/.bash_completion`:
 
     complete -F _complete_alias sctl
 
-Now typing `<Tab>` after `sctl<space>` will show `systemctl` commands (provided
-`systemctl` completion exists and works).
+Now typing `<Tab>` after `sctl<space>` will show `systemctl` commands:
+
+    add-requires
+    add-wants
+    cancel
+    cat
+    condreload
+    ...
 
 # LICENSE
 
