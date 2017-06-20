@@ -85,17 +85,6 @@ _expand_alias () {
     (( COMP_CWORD+=($alias_arraylen-1) ))
     COMP_LINE="$alias_str""${COMP_LINE:$alias_namelen}"
     (( COMP_POINT+=($alias_strlen-$alias_namelen) ))
-
-    # Strip leading redirections in alias-expanded command line.
-    local redir="@(?([0-9])<|?([0-9&])>?(>)|>&)"
-    while [[ "${#COMP_WORDS[@]}" -gt 0 && "${COMP_WORDS[0]}" == $redir* ]]; do
-        local word="${COMP_WORDS[0]}"
-        COMP_WORDS=(${COMP_WORDS[@]:1})
-        (( COMP_CWORD-- ))
-        local linelen="${#COMP_LINE}"
-        COMP_LINE="${COMP_LINE#$word+( )}"
-        (( COMP_POINT-=($linelen-${#COMP_LINE}) ))
-    done
 }
 
 # Alias completion function.
