@@ -13,8 +13,8 @@
 # You should have received a copy of the GNU General Public License along with
 # this program.  If not, see <http://www.gnu.org/licenses/>.
 
-# Flag: Use alias or not.
-_use_alias=1
+# Refcnt: Use alias iff this value == 0.
+_use_alias=0
 
 # Function: Test whether the given array contains the given element.
 # Usage: _in <elem> <arr_elem_0> <arr_elem_1> ...
@@ -166,13 +166,13 @@ _complete_alias () {
     # Get command.
     local cmd="${COMP_WORDS[0]}"
 
-    if [[ $_use_alias -ne 0 ]]; then
+    if [[ $_use_alias -eq 0 ]]; then
         # Expand aliases in command.
         _expand_alias
-
-        # Clear use-alias flag.
-        _use_alias=0
     fi
+
+    # Inc use-alias refcnt.
+    (( _use_alias++ ))
 
     # Load this command's default completion function. This avoids infinite
     # recursion when a command is aliased to itself (i.e. alias ls='ls -a').
@@ -181,8 +181,8 @@ _complete_alias () {
     # Do completion.
     _command_offset 0
 
-    # Set use-alias flag.
-    _use_alias=1
+    # Dec use-alias refcnt.
+    (( _use_alias-- ))
 
     # Restore this command's completion function to `_complete_alias`.
     complete -F _complete_alias "$cmd"
