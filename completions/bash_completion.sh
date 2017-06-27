@@ -13,6 +13,20 @@
 # You should have received a copy of the GNU General Public License along with
 # this program.  If not, see <http://www.gnu.org/licenses/>.
 
+# Function: Debug.
+_debug() {
+    echo
+    echo "COMP_WORDS=("
+    for x in "${COMP_WORDS[@]}"; do
+        echo "'$x'"
+    done
+    echo ")"
+    echo "#COMP_WORDS=${#COMP_WORDS[@]}"
+    echo "COMP_CWORD=${COMP_CWORD}"
+    echo "COMP_LINE='${COMP_LINE}'"
+    echo "COMP_POINT=${COMP_POINT}"
+}
+
 # Refcnt: Use alias iff this value == 0.
 _use_alias=0
 
@@ -53,33 +67,39 @@ _expand_alias_core () {
     if [[ $n_words -eq 0 ]]; then
         # Case 1: Empty input gives empty output.
         g_ans=()
+    elif ! ( alias "${words[0]}" &>/dev/null ) || ( _in "${words[0]}" "${ignore[@]}" ); then
+        # Case 2: If the first word "is not an alias" or "is an alias that
+        # has already been expanded in higher scope", then don't expand it.
+        g_ans=( "${words[@]}" )
     else
-        if ! ( alias "${words[0]}" &>/dev/null ) || ( _in "${words[0]}" "${ignore[@]}" ); then
-            # Case 2: If the first word "is not an alias" or "is an alias that
-            # has already been expanded in higher scope", then don't expand it.
-            g_ans=( "${words[@]}" )
+        # Case 3: The first word is an alias that hasn't been expanded yet. Now expand it.
+        str0="$( alias "${words[0]}" | sed -r 's/[^=]*=//' | xargs )"
+        local OIFS="$IFS"; IFS=$'\n'; words0=( $(xargs -n1 <<< "$str0") ); IFS="$OIFS"
+        ignore0=( "${ignore[@]}" "${words[0]}" )
+
+        echo "before"
+        _debug
+        COMP_WORDS=( "${words0[@]}" "${COMP_WORDS[@]:1}" )
+        echo "after"
+        _debug
+
+        words1=( "${words[@]:1}" )
+        ignore1=( "${ignore[@]}" )
+
+        # Recursively expand Part 0.
+        _expand_alias_core "${#words0[@]}" "${words0[@]}" "${#ignore0[@]}" "${ignore0[@]}"; ans0=( "${g_ans[@]}" )
+
+        # Recursively expand Part 1.
+        if [[ -n "$str0" ]] && [[ "${str0: -1}" == ' ' ]]; then
+            # If the first word ends with a blank, then continue expanding the following words.
+            _expand_alias_core "${#words1[@]}" "${words1[@]}" "${#ignore1[@]}" "${ignore1[@]}"; ans1=( "${g_ans[@]}" )
         else
-            # Case 3: The first word is an alias that hasn't been expanded yet. Now expand it.
-            str0="$( alias "${words[0]}" | sed -r 's/[^=]*=//' | xargs )"
-
-            local OIFS="$IFS"; IFS=$'\n'; words0=( $(xargs -n1 <<< "$str0") ); IFS="$OIFS"
-            ignore0=( "${ignore[@]}" "${words[0]}" )
-
-            words1=( "${words[@]:1}" )
-            ignore1=( "${ignore[@]}" )
-
-            _expand_alias_core "${#words0[@]}" "${words0[@]}" "${#ignore0[@]}" "${ignore0[@]}"; ans0=( "${g_ans[@]}" )
-            if [[ -n "$str0" ]] && [[ "${str0: -1}" == ' ' ]]; then
-                # If the first word ends with a blank, then continue expanding the following words.
-                _expand_alias_core "${#words1[@]}" "${words1[@]}" "${#ignore1[@]}" "${ignore1[@]}"; ans1=( "${g_ans[@]}" )
-            else
-                # Else, append the following words verbatim.
-                ans1=( "${words1[@]}" )
-            fi
-
-            # Combine the two parts to get the final result.
-            g_ans=( "${ans0[@]}" "${ans1[@]}" )
+            # Else, append the following words verbatim.
+            ans1=( "${words1[@]}" )
         fi
+
+        # Combine the two parts to get the final result.
+        g_ans=( "${ans0[@]}" "${ans1[@]}" )
     fi
 
 }
