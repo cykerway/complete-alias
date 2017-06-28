@@ -4,40 +4,50 @@ Programmable completion function for shell aliases.
 
 # Intro
 
-Users often don't have a way to complete custom shell aliases.
+If you are wondering how to make the programmable completion functionality as
+provided by the shell work with aliases automagically, then this program is your
+friend.
 
-This program provides a **generic**, **universal** and **programmatic** solution
-to this problem:
+This program provides a shell alias completion tool which:
 
--   It is **generic**. The program works with all commonly defined aliases, even
-    those with leading redirections and those aliasing to themselves.
+-   Works with all properly defined aliases, even those aliasing to themselves.
 
--   It is **universal**. A single function completes all aliases blindly, which
-    means users don't have to define different completion functions for
-    different aliases.
+-   Uses a single function to complete all aliases, which means you don't have
+    to define different functions for different aliases.
 
--   It is **programmatic**. Aliases are completed automatically by the program
-    as you type without any human intervention.
+-   Completes aliases automagically as you type in the command line and press
+    `<Tab>`. Nothing else.
 
 # Installation & Usage
 
-## Bash
+Currently the only supported shell is [Bash][Bash].
 
-1.  If `~/.bash_completion` doesn't exist, create it.
+To use this program with Bash:
 
-2.  Paste the content of `completions/bash_completion.sh` into
-    `~/.bash_completion`.
+1.  Install [bash-completion][bash-completion], which is a dependency of this
+    program.
 
-3.  Complete an alias with:
+    You may find it already installed on your system or you may be able to
+    install it via your system's package manager.
 
-        complete -F _complete_alias <myalias>
+2.  Append the content of `completions/bash_completion.sh` into
+    `~/.bash_completion`:
 
-    Multiple aliases can be specified one per line, or as arguments on a single
-    line.
+        cat completions/bash_completion.sh >> ~/.bash_completion
 
-# Example
+3.  Edit `~/.bash_completion` to setup completion functions for your own
+    aliases. Usually this involves uncomment and edit some comment lines like
+    this:
 
-## Bash
+        #complete -F _complete_alias myalias
+
+    If you want to complete for alias `foo`, then edit this line into:
+
+        complete -F _complete_alias foo
+
+4.  To complete a command line with an alias, simply press `<Tab>`.
+
+# Usage Example
 
 In `~/.bash_profile`:
 
@@ -61,7 +71,7 @@ Now typing `<Tab>` after `sctl<space>` will show `systemctl` commands:
 
 The source code is licensed under the [GNU General Public License v3.0][GPLv3].
 
-Copyright (C) 2016 Cyker Way
+Copyright (C) 2016-2017 Cyker Way
 
 This program is free software: you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free Software
@@ -76,4 +86,6 @@ You should have received a copy of the GNU General Public License along with
 this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+[Bash]: https://www.gnu.org/software/bash/
 [GPLv3]: https://www.gnu.org/licenses/gpl-3.0.txt
+[bash-completion]: https://github.com/scop/bash-completion
