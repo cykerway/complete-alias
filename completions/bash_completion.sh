@@ -27,7 +27,7 @@ _debug() {
     echo "COMP_POINT=${COMP_POINT}"
 }
 
-# Refcnt: Use alias iff this value == 0.
+# Refcnt: Use alias iff _use_alias == 0.
 _use_alias=0
 
 # Function: Test whether the given array contains the given element.
@@ -181,30 +181,36 @@ _load_default_completion () {
     esac
 }
 
-# Function: Main alias completion function.
+# Function: Programmable completion function for aliases.
 _complete_alias () {
     # Get command.
     local cmd="${COMP_WORDS[0]}"
 
+    # We expand aliases only for the original command line (i.e. the command
+    # line as verbatim when user presses 'Tab'). That is to say, we expand
+    # aliases only in the first call of this function. Therefore we check the
+    # refcnt and expand aliases iff it's equal to 0.
     if [[ $_use_alias -eq 0 ]]; then
-        # Expand aliases in command.
         _expand_alias
     fi
 
-    # Inc use-alias refcnt.
+    # Increase _use_alias refcnt.
     (( _use_alias++ ))
 
-    # Load this command's default completion function. This avoids infinite
-    # recursion when a command is aliased to itself (i.e. alias ls='ls -a').
-    _load_default_completion "$cmd"
+    # Since aliases have been fully expanded, we no longer need to consider
+    # aliases in the resulting command line. So we now set this command's
+    # completion function to the default one (which is alias-agnostic). This
+    # avoids infinite recursion when a command is aliased to itself (i.e. alias
+    # ls='ls -a').
+    _set_default_completion "$cmd"
 
-    # Do completion.
+    # Do actual completion.
     _command_offset 0
 
-    # Dec use-alias refcnt.
+    # Decrease _use_alias refcnt.
     (( _use_alias-- ))
 
-    # Restore this command's completion function to `_complete_alias`.
+    # Reset this command's completion function to `_complete_alias`.
     complete -F _complete_alias "$cmd"
 }
 
