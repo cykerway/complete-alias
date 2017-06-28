@@ -27,6 +27,9 @@ _debug() {
     echo "COMP_POINT=${COMP_POINT}"
 }
 
+# Register: Function return value.
+_retval=0
+
 # Refcnt: Use alias iff _use_alias == 0.
 _use_alias=0
 
@@ -39,80 +42,74 @@ _in () {
     return 1
 }
 
-# Function: Core implementation of command line alias expansion.
-# Usage: _expand_alias_core <#words> <words> <#ignore> <ignore>
-# <words>   : Words in a command line.
-# <ignore>  : Words ignored for alias expansion.
-_expand_alias_core () {
+# Function: Expand aliases in a command line.
+# Return: Difference of #COMP_WORDS (before/after expansion).
+_expand_alias () {
+    local beg="$1" end="$2" n_used="$3"; shift 3
+    local used=( "${@:1:$n_used}" ); shift $n_used
 
-    # Read parameters `words` and `ignore`.
-    local n_words="$1"; shift 1
-    local words=( "${@:1:$n_words}" ); shift $n_words
-    local n_ignore="$1"; shift 1
-    local ignore=( "${@:1:$n_ignore}" ); shift $n_ignore
-
-    # Global var to store result.
-    g_ans=()
-
-    # Local vars.
-    local str0
-    local ans0
-    local ans1
-    local ignore0
-    local ignore1
-    local words0
-    local words1
-
-    # Begin expansion.
-    if [[ $n_words -eq 0 ]]; then
-        # Case 1: Empty input gives empty output.
-        g_ans=()
-    elif ! ( alias "${words[0]}" &>/dev/null ) || ( _in "${words[0]}" "${ignore[@]}" ); then
-        # Case 2: If the first word "is not an alias" or "is an alias that
-        # has already been expanded in higher scope", then don't expand it.
-        g_ans=( "${words[@]}" )
+    if [[ "$beg" -eq "$end" ]]; then
+        # Case 1: Range is empty.
+        _retval=0
+    elif ! ( alias "${COMP_WORDS[$beg]}" &>/dev/null ) || ( _in "${COMP_WORDS[$beg]}" "${used[@]}" ); then
+        # Case 2: Command is not an alias or is an used alias.
+        _retval=0
     else
-        # Case 3: The first word is an alias that hasn't been expanded yet. Now expand it.
-        str0="$( alias "${words[0]}" | sed -r 's/[^=]*=//' | xargs )"
-        local OIFS="$IFS"; IFS=$'\n'; words0=( $(xargs -n1 <<< "$str0") ); IFS="$OIFS"
-        ignore0=( "${ignore[@]}" "${words[0]}" )
+        # Case 3: Command is an unused alias.
 
-        echo "before"
-        _debug
-        COMP_WORDS=( "${words0[@]}" "${COMP_WORDS[@]:1}" )
-        echo "after"
-        _debug
+        # Expand 1 level of command alias.
+        local cmd="${COMP_WORDS[$beg]}"
+        local str0="$( alias "$cmd" | sed -r 's/[^=]*=//' | xargs )"
+        OIFS="$IFS"; IFS=$'\n'; words0=( $(xargs -n1 <<< "$str0") ); IFS="$OIFS"; unset OIFS
 
-        words1=( "${words[@]:1}" )
-        ignore1=( "${ignore[@]}" )
+        # Modify COMP_LINE and COMP_POINT.
+        local i j=0
+        for (( i=0; i < $beg; i++ )); do
+            for (( ; j <= ${#COMP_LINE}; j++ )); do
+                [[ "$COMP_LINE" == "${COMP_WORDS[i]}"* ]] && break
+            done
+            (( j+=${#COMP_WORDS[i]} ))
+        done
+        for (( ; j <= ${#COMP_LINE}; j++ )); do
+            [[ "$COMP_LINE" == "${COMP_WORDS[i]}"* ]] && break
+        done
+
+        COMP_LINE="${COMP_LINE[@]:0:j}""$str0""${COMP_LINE[@]:j+${#cmd}}"
+        if [[ $COMP_POINT -lt $j ]]; then
+            ;
+        elif [[ $COMP_POINT -lt $(( j+${#cmd} )) ]]; then
+            (( COMP_POINT=j+${#str0} ))
+        else
+            (( COMP_POINT+=${#str0}-${#cmd} ))
+        fi
+
+        # Modify COMP_WORDS and COMP_CWORD.
+        COMP_WORDS=( "${COMP_WORDS[@]:0:beg}" "${words0[@]}" "${COMP_WORDS[@]:beg+1}" )
+        if [[ $COMP_CWORD -lt $beg ]]; then
+            ;
+        elif [[ $COMP_CWORD -lt $(( $beg+1 )) ]]; then
+            (( COMP_CWORD=beg+${#words0[@]} ))
+        else
+            (( COMP_CWORD+=${#words0[@]}-1 ))
+        fi
 
         # Recursively expand Part 0.
-        _expand_alias_core "${#words0[@]}" "${words0[@]}" "${#ignore0[@]}" "${ignore0[@]}"; ans0=( "${g_ans[@]}" )
+        local used0=( "${used[@]}" "$cmd" )
+        _expand_alias "$beg" "$(( $beg+${#words0[@]} ))" "${#used0[@]}" "${used0[@]}"
+        local diff0="$_retval"
 
         # Recursively expand Part 1.
         if [[ -n "$str0" ]] && [[ "${str0: -1}" == ' ' ]]; then
-            # If the first word ends with a blank, then continue expanding the following words.
-            _expand_alias_core "${#words1[@]}" "${words1[@]}" "${#ignore1[@]}" "${ignore1[@]}"; ans1=( "${g_ans[@]}" )
+            local used1=( "${used[@]}" )
+            _expand_alias "$(( $beg+${#words0[@]}+$diff0 ))" "$(( $end+${#words0[@]}-1+$diff0 ))" "${#used1[@]}" "${used1[@]}"
+            local diff1="$_retval"
         else
-            # Else, append the following words verbatim.
-            ans1=( "${words1[@]}" )
+            local diff1=0
         fi
 
-        # Combine the two parts to get the final result.
-        g_ans=( "${ans0[@]}" "${ans1[@]}" )
+        # Return value.
+        _retval=$(( ${#words0[@]}-1+diff0+diff1 ))
     fi
-
-}
-
-# Function: Expand aliases in a command line.
-_expand_alias () {
-    _expand_alias_core "${#COMP_WORDS[@]}" "${COMP_WORDS[@]}" "0" ""
-
-    # Rewrite current completion context after alias expansion.
-    COMP_WORDS=( "${g_ans[@]}" )
-    COMP_CWORD="$(( ${#COMP_WORDS[@]}-1 ))"
-    COMP_LINE="${COMP_WORDS[*]}"
-    COMP_POINT="$(( ${#COMP_LINE} ))"
 }
 
 # Function: Load a command's default completion function.
