@@ -1,4 +1,4 @@
-# Copyright (C) 2016 Cyker Way
+# Copyright (C) 2016-2017 Cyker Way
 #
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -25,6 +25,7 @@ _debug() {
     echo "COMP_CWORD=${COMP_CWORD}"
     echo "COMP_LINE='${COMP_LINE}'"
     echo "COMP_POINT=${COMP_POINT}"
+    echo
 }
 
 # Register: Function return value.
@@ -76,7 +77,7 @@ _expand_alias () {
 
         COMP_LINE="${COMP_LINE[@]:0:j}""$str0""${COMP_LINE[@]:j+${#cmd}}"
         if [[ $COMP_POINT -lt $j ]]; then
-            ;
+            :
         elif [[ $COMP_POINT -lt $(( j+${#cmd} )) ]]; then
             (( COMP_POINT=j+${#str0} ))
         else
@@ -86,7 +87,7 @@ _expand_alias () {
         # Modify COMP_WORDS and COMP_CWORD.
         COMP_WORDS=( "${COMP_WORDS[@]:0:beg}" "${words0[@]}" "${COMP_WORDS[@]:beg+1}" )
         if [[ $COMP_CWORD -lt $beg ]]; then
-            ;
+            :
         elif [[ $COMP_CWORD -lt $(( $beg+1 )) ]]; then
             (( COMP_CWORD=beg+${#words0[@]} ))
         else
@@ -112,9 +113,9 @@ _expand_alias () {
     fi
 }
 
-# Function: Load a command's default completion function.
-# Users may adjust this function to fit their own needs.
-_load_default_completion () {
+# Function: Set a command's completion function to the default one.
+# Users may edit this function to fit their own needs.
+_set_default_completion () {
     local cmd="$1"
 
     case "$cmd" in
@@ -188,7 +189,7 @@ _complete_alias () {
     # aliases only in the first call of this function. Therefore we check the
     # refcnt and expand aliases iff it's equal to 0.
     if [[ $_use_alias -eq 0 ]]; then
-        _expand_alias
+        _expand_alias 0 "${#COMP_WORDS[@]}" 0
     fi
 
     # Increase _use_alias refcnt.
@@ -213,7 +214,7 @@ _complete_alias () {
 
 # Set alias completions.
 #
-# Uncomment these lines to add your own alias completions.
+# Uncomment and edit these lines to add your own alias completions.
 #
 #complete -F _complete_alias myalias1
 #complete -F _complete_alias myalias2
