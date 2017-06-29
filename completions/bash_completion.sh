@@ -46,24 +46,28 @@ _in () {
 # Function: Expand aliases in a command line.
 # Return: Difference of #COMP_WORDS (before/after expansion).
 _expand_alias () {
-    local beg="$1" end="$2" n_used="$3"; shift 3
+    local beg="$1" end="$2" ignore="$3" n_used="$4"; shift 4
     local used=( "${@:1:$n_used}" ); shift $n_used
 
     if [[ "$beg" -eq "$end" ]]; then
         # Case 1: Range is empty.
         _retval=0
+    elif [[ -n "$ignore" ]] && [[ "$beg" -eq "$ignore" ]]; then
+        # Case 2: Beginning index is ignored. Pass it.
+        _expand_alias "$(( $beg+1 ))" "$end" "$ignore" "${#used[@]}" "${used[@]}"
+        _retval="$_retval"
     elif ! ( alias "${COMP_WORDS[$beg]}" &>/dev/null ) || ( _in "${COMP_WORDS[$beg]}" "${used[@]}" ); then
-        # Case 2: Command is not an alias or is an used alias.
+        # Case 3: Command is not an alias or is an used alias.
         _retval=0
     else
-        # Case 3: Command is an unused alias.
+        # Case 4: Command is an unused alias.
 
         # Expand 1 level of command alias.
         local cmd="${COMP_WORDS[$beg]}"
         local str0="$( alias "$cmd" | sed -r 's/[^=]*=//' | xargs )"
         OIFS="$IFS"; IFS=$'\n'; words0=( $(xargs -n1 <<< "$str0") ); IFS="$OIFS"; unset OIFS
 
-        # Modify COMP_LINE and COMP_POINT.
+        # Rewrite COMP_LINE and COMP_POINT.
         local i j=0
         for (( i=0; i < $beg; i++ )); do
             for (( ; j <= ${#COMP_LINE}; j++ )); do
@@ -84,7 +88,7 @@ _expand_alias () {
             (( COMP_POINT+=${#str0}-${#cmd} ))
         fi
 
-        # Modify COMP_WORDS and COMP_CWORD.
+        # Rewrite COMP_WORDS and COMP_CWORD.
         COMP_WORDS=( "${COMP_WORDS[@]:0:beg}" "${words0[@]}" "${COMP_WORDS[@]:beg+1}" )
         if [[ $COMP_CWORD -lt $beg ]]; then
             :
@@ -94,15 +98,22 @@ _expand_alias () {
             (( COMP_CWORD+=${#words0[@]}-1 ))
         fi
 
+        # Rewrite ignore if it's not empty.
+        # If ignore is not empty, we already know it's not equal to beg because
+        # we have checked it in Case 2.
+        if [[ -n "$ignore" ]] && [[ $ignore -gt $beg ]]; then
+            (( ignore+=${#words0[@]}-1 ))
+        fi
+
         # Recursively expand Part 0.
         local used0=( "${used[@]}" "$cmd" )
-        _expand_alias "$beg" "$(( $beg+${#words0[@]} ))" "${#used0[@]}" "${used0[@]}"
+        _expand_alias "$beg" "$(( $beg+${#words0[@]} ))" "$ignore" "${#used0[@]}" "${used0[@]}"
         local diff0="$_retval"
 
         # Recursively expand Part 1.
         if [[ -n "$str0" ]] && [[ "${str0: -1}" == ' ' ]]; then
             local used1=( "${used[@]}" )
-            _expand_alias "$(( $beg+${#words0[@]}+$diff0 ))" "$(( $end+${#words0[@]}-1+$diff0 ))" "${#used1[@]}" "${used1[@]}"
+            _expand_alias "$(( $beg+${#words0[@]}+$diff0 ))" "$(( $end+${#words0[@]}-1+$diff0 ))" "$ignore" "${#used1[@]}" "${used1[@]}"
             local diff1="$_retval"
         else
             local diff1=0
@@ -188,8 +199,32 @@ _complete_alias () {
     # line as verbatim when user presses 'Tab'). That is to say, we expand
     # aliases only in the first call of this function. Therefore we check the
     # refcnt and expand aliases iff it's equal to 0.
-    if [[ $_use_alias -eq 0 ]] && [[ "${COMP_LINE: -1}" == ' ' ]]; then
-        _expand_alias 0 "${#COMP_WORDS[@]}" 0
+    if [[ $_use_alias -eq 0 ]]; then
+
+        # Find the range of indexes of COMP_WORDS[COMP_CWORD] in COMP_LINE. If
+        # COMP_POINT lies in this range, don't expand this word because it may
+        # be incomplete.
+        local i j=0
+        for (( i=0; i < $COMP_CWORD; i++ )); do
+            for (( ; j <= ${#COMP_LINE}; j++ )); do
+                [[ "${COMP_LINE:j}" == "${COMP_WORDS[i]}"* ]] && break
+            done
+            (( j+=${#COMP_WORDS[i]} ))
+        done
+        for (( ; j <= ${#COMP_LINE}; j++ )); do
+            [[ "${COMP_LINE:j}" == "${COMP_WORDS[i]}"* ]] && break
+        done
+
+        # Now j is at the beginning of word COMP_WORDS[COMP_CWORD] and so the
+        # range is [j, j+#COMP_WORDS[COMP_CWORD]]. Compare it with COMP_POINT.
+        if [[ $j -le $COMP_POINT ]] && [[ $COMP_POINT -le $(( $j+${#COMP_WORDS[$COMP_CWORD]} )) ]] ; then
+            local ignore="$COMP_CWORD"
+        else
+            local ignore=""
+        fi
+
+        # Expand aliases.
+        _expand_alias 0 "${#COMP_WORDS[@]}" "$ignore" 0
     fi
 
     # Increase _use_alias refcnt.
