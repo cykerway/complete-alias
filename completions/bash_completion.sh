@@ -67,12 +67,12 @@ _expand_alias () {
         local i j=0
         for (( i=0; i < $beg; i++ )); do
             for (( ; j <= ${#COMP_LINE}; j++ )); do
-                [[ "$COMP_LINE" == "${COMP_WORDS[i]}"* ]] && break
+                [[ "${COMP_LINE:j}" == "${COMP_WORDS[i]}"* ]] && break
             done
             (( j+=${#COMP_WORDS[i]} ))
         done
         for (( ; j <= ${#COMP_LINE}; j++ )); do
-            [[ "$COMP_LINE" == "${COMP_WORDS[i]}"* ]] && break
+            [[ "${COMP_LINE:j}" == "${COMP_WORDS[i]}"* ]] && break
         done
 
         COMP_LINE="${COMP_LINE[@]:0:j}""$str0""${COMP_LINE[@]:j+${#cmd}}"
@@ -174,7 +174,7 @@ _set_default_completion () {
             complete -F _longopt "$cmd"
             ;;
         *)
-            complete -F _completion_loader "$cmd"
+            _completion_loader "$cmd"
             ;;
     esac
 }
