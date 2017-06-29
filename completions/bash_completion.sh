@@ -188,7 +188,7 @@ _complete_alias () {
     # line as verbatim when user presses 'Tab'). That is to say, we expand
     # aliases only in the first call of this function. Therefore we check the
     # refcnt and expand aliases iff it's equal to 0.
-    if [[ $_use_alias -eq 0 ]]; then
+    if [[ $_use_alias -eq 0 ]] && [[ "${COMP_LINE: -1}" == ' ' ]]; then
         _expand_alias 0 "${#COMP_WORDS[@]}" 0
     fi
 
