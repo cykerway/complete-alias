@@ -217,7 +217,7 @@ _complete_alias () {
 
         # Now j is at the beginning of word COMP_WORDS[COMP_CWORD] and so the
         # range is [j, j+#COMP_WORDS[COMP_CWORD]]. Compare it with COMP_POINT.
-        if [[ $j -le $COMP_POINT ]] && [[ $COMP_POINT -le $(( $j+${#COMP_WORDS[$COMP_CWORD]} )) ]] ; then
+        if [[ $j -le $COMP_POINT ]] && [[ $COMP_POINT -le $(( $j+${#COMP_WORDS[$COMP_CWORD]} )) ]]; then
             local ignore="$COMP_CWORD"
         else
             local ignore=""
