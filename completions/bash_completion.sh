@@ -65,7 +65,89 @@ _expand_alias () {
         # Expand 1 level of command alias.
         local cmd="${COMP_WORDS[$beg]}"
         local str0="$( alias "$cmd" | sed -r 's/[^=]*=//' | xargs )"
-        OIFS="$IFS"; IFS=$'\n'; words0=( $(xargs -n1 <<< "$str0") ); IFS="$OIFS"; unset OIFS
+
+        # The old way of word breaking (using xargs) is not accurate enough.
+        #
+        # For example:
+        #
+        # > alias foo='docker run -u $(id -u $USER):$(id -g $USER)'
+        #
+        # will be broken as:
+        #
+        # > docker
+        # > run
+        # > -u
+        # > $(id
+        # > -u
+        # > $USER):$(id
+        # > -g
+        # > $USER)
+        #
+        # while the correct word breaking is:
+        #
+        # > docker
+        # > run
+        # > -u
+        # > $(id -u $USER)
+        # > :
+        # > $(id -g $USER)
+        #
+        # Therefore we implement our own word breaking which gives the correct
+        # behavior in this case. It takes the alias body ($str0) as input,
+        # breaks it into words and stores them in an array ($words0).
+        {
+            # An array that will contain the broken words.
+            words0=()
+
+            # Create a temp stack which tracks quoting while breaking words.
+            local sta=()
+
+            # Examine each char of $str0.
+            local i=0 j=0
+            for (( j=0;j<${#str0};j++ )); do
+                if [[ $' \t\n' == *"${str0:j:1}"* ]]; then
+                    # Whitespace chars.
+                    if [[ ${#sta[@]} -eq 0 ]]; then
+                        if [[ $i -lt $j ]]; then
+                            words0+=("${str0:i:j-i}")
+                        fi
+                        (( i=j+1 ))
+                    fi
+                elif [[ "><=;|&:" == *"${str0:j:1}"* ]]; then
+                    # Break chars.
+                    if [[ ${#sta[@]} -eq 0 ]]; then
+                        if [[ $i -lt $j ]]; then
+                            words0+=("${str0:i:j-i}")
+                        fi
+                        words0+=("${str0:j:1}")
+                        (( i=j+1 ))
+                    fi
+                elif [[ "\"')}" == *"${str0:j:1}"* ]]; then
+                    # Right quote chars.
+                    if [[ ${#sta[@]} -ne 0 ]] && [[ "${str0:j:1}" == ${sta[-1]} ]]; then
+                        unset sta[-1]
+                    fi
+                elif [[ "\"'({" == *"${str0:j:1}"* ]]; then
+                    # Left quote chars.
+                    if [[ "${str0:j:1}" == "\"" ]]; then
+                        sta+=("\"")
+                    elif [[ "${str0:j:1}" == "'" ]]; then
+                        sta+=("'")
+                    elif [[ "${str0:j:1}" == "(" ]]; then
+                        sta+=(")")
+                    elif [[ "${str0:j:1}" == "{" ]]; then
+                        sta+=("}")
+                    fi
+                fi
+            done
+            # Append the last word.
+            if [[ $i -lt $j ]]; then
+                words0+=("${str0:i:j-i}")
+            fi
+
+            # Unset the temp stack.
+            unset sta
+        }
 
         # Rewrite COMP_LINE and COMP_POINT.
         local i j=0
