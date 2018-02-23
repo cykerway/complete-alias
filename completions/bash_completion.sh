@@ -64,7 +64,7 @@ _expand_alias () {
 
         # Expand 1 level of command alias.
         local cmd="${COMP_WORDS[$beg]}"
-        local str0="$( alias "$cmd" | sed -r 's/[^=]*=//' | xargs )"
+        local str0="$( alias "$cmd" | sed -E 's/[^=]*=//' | xargs )"
 
         # The old way of word breaking (using xargs) is not accurate enough.
         #
