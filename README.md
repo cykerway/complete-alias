@@ -1,73 +1,58 @@
 # complete-alias
 
-Programmable completion function for shell aliases.
+programmable completion function for shell aliases;
 
-# Intro
+this project provides a tool which completes shell aliases automagically:
 
-If you are wondering how to let the shell complete aliases automagically, then
-this program is your friend.
+-   it works with all commonly used aliases (including self-aliases);
 
-This program provides a shell alias completion tool which:
+-   it uses a single function to complete all these aliases;
 
--   Works with all commonly defined aliases, including self-aliases.
+-   it completes aliases as you type it and press `<tab>`;
 
--   Uses a single function to complete all aliases.
+## install
 
--   Completes aliases as you type in the command line and press `<Tab>`. Nothing
-    else.
+1.  install [bash-completion][], which is a dependency of this project;
 
-See **Portability** for supported environments.
+    bash-completion is available in repositories of many linux distributions;
 
-# Install & Use
+2.  append `bash_completion.sh` to `~/.bash_completion`:
 
-1.  Install [bash-completion][bash-completion], which is a dependency of this
-    program.
+        cat bash_completion.sh >> ~/.bash_completion
 
-    You may find it already installed on your system, or, you may be able to
-    install it via your system's package manager.
+## usage
 
-2.  Append the content of `completions/bash_completion.sh` into
-    `~/.bash_completion`:
+1.  add completion functions for your own shell aliases in `~/.bash_completion`:
 
-        cat completions/bash_completion.sh >> ~/.bash_completion
-
-3.  Edit `~/.bash_completion` with completion functions for your own aliases.
-    For example, if you want to complete alias `foo`, then add a line in its
-    end:
+    for example, to complete alias `foo`, add a line:
 
         complete -F _complete_alias foo
 
-4.  To complete an alias, type it and press `<Tab>`.
+2.  to complete an alias, type it and press `<tab>`;
 
-# Example
+## example
 
--   In `~/.bash_profile`:
+to complete alias `sctl`, which is aliased to `systemctl`:
 
-        alias sctl='systemctl'
+    # alias sctl='systemctl'
+    # echo 'complete -F _complete_alias sctl' >> ~/.bash_completion
+    # sctl <tab>
+    add-requires
+    add-wants
+    cancel
+    cat
+    condreload
+    ...
 
--   In `~/.bash_completion`:
+## compat
 
-        complete -F _complete_alias sctl
+-   this project is expected to work with gnu bash on linux;
 
--   Type `sctl <tab>` to show `systemctl` commands:
+-   support for other shells is not yet implemented;
 
-        $ sctl <Tab>
-        add-requires
-        add-wants
-        cancel
-        cat
-        condreload
-        ...
+-   support for macos and other operating systems is experimental;
 
-# Portability
-
-This program is expected to work with GNU Bash on Linux.
-
-Support for additional shells is not yet implemented.
-
-Support for MacOS and other operating systems is experimental.
-
-# License
+## license
 
 The source code is licensed under the [GNU General Public License v3.0][GPLv3].
 
@@ -85,6 +70,6 @@ PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 You should have received a copy of the GNU General Public License along with
 this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
 [GPLv3]: https://www.gnu.org/licenses/gpl-3.0.txt
 [bash-completion]: https://github.com/scop/bash-completion
+
