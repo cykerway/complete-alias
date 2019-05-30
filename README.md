@@ -14,7 +14,20 @@ this project provides a tool which completes shell aliases automagically:
 
 1.  install [bash-completion][], which is a dependency of this project;
 
-    bash-completion is available in repositories of many linux distributions;
+    -   linux:
+
+        there is a package `bash-completion` in many linux distros; you can
+        install it with a package manager:
+
+            dnf install bash-completion     ##  fedora
+            apt install bash-completion     ##  debian
+
+    -   macos (experimental):
+
+        there are 2 different versions of `bash-completion` homebrew formulae;
+        you should install version 2:
+
+            brew install bash-completion@2
 
 2.  append `bash_completion.sh` to `~/.bash_completion`:
 
@@ -46,7 +59,9 @@ to complete alias `sctl`, which is aliased to `systemctl`:
 
 ## compat
 
--   this project is expected to work with gnu bash on linux;
+-   this project is expected to work with gnu bash(>=4.4) on linux;
+
+-   support for older versions of bash is not tested;
 
 -   support for other shells is not yet implemented;
 
