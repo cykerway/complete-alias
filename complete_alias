@@ -75,6 +75,17 @@ _split_cmd_line() {
     ##  alloc a temp stack to track open and close chars when splitting;
     local sta=()
 
+    ##  we adopt some bool flags to handle redirections and assignments at the
+    ##  beginning of the command line, if any; we can simply drop redirections
+    ##  and assignments for sake of alias completion; for detail, read `SIMPLE
+    ##  COMMAND EXPANSION` in `man bash`;
+
+    ##  bool: check (outmost) redirection or assignment;
+    local check_redass=1
+
+    ##  bool: found (outmost) redirection or assignment in current word;
+    local found_redass=0
+
     ##  examine each char of `str`;
     local i=0 j=0
     for (( ; j < ${#str}; j++ )); do
@@ -102,11 +113,35 @@ _split_cmd_line() {
                 (( j++ ))
             elif [[ "\'" == "${str:j:2}" ]]; then
                 (( j++ ))
+            elif [[ "><=" == *"${str:j:1}"* ]]; then
+                found_redass=1
             elif [[ $' \t\n' == *"${str:j:1}"* ]]; then
-                (( i < j )) && words+=( "${str:i:j-i}" )
+                if (( i < j )); then
+                    if (( $found_redass == 1 )); then
+                        if (( $check_redass == 0 )); then
+                            words+=( "${str:i:j-i}" )
+                        fi
+                        found_redass=0
+                    else
+                        ##  no redass in current word; stop checking;
+                        check_redass=0
+                        words+=( "${str:i:j-i}" )
+                    fi
+                fi
                 (( i = j + 1 ))
-            elif [[ "><=;|&:" == *"${str:j:1}"* ]]; then
-                (( i < j )) && words+=( "${str:i:j-i}" )
+            elif [[ ";|&:" == *"${str:j:1}"* ]]; then
+                if (( i < j )); then
+                    if (( $found_redass == 1 )); then
+                        if (( $check_redass == 0 )); then
+                            words+=( "${str:i:j-i}" )
+                        fi
+                        found_redass=0
+                    else
+                        ##  no redass in current word; stop checking;
+                        check_redass=0
+                        words+=( "${str:i:j-i}" )
+                    fi
+                fi
                 words+=( "${str:j:1}" )
                 (( i = j + 1 ))
             fi
@@ -214,7 +249,18 @@ _split_cmd_line() {
     done
 
     ##  append the last word;
-    (( i < j )) && words+=( "${str:i:j-i}" )
+    if (( i < j )); then
+        if (( $found_redass == 1 )); then
+            if (( $check_redass == 0 )); then
+                words+=( "${str:i:j-i}" )
+            fi
+            found_redass=0
+        else
+            ##  no redass in current word; stop checking;
+            check_redass=0
+            words+=( "${str:i:j-i}" )
+        fi
+    fi
 
     ##  unset the temp stack;
     unset sta
