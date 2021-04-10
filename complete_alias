@@ -311,7 +311,9 @@ _expand_alias() {
         local cmd="${COMP_WORDS[$beg]}"
 
         ##  get alias body;
-        local str0="$( alias "$cmd" | command sed -E 's/[^=]*=//' | xargs )"
+        local str0="$(
+            alias "$cmd" | command sed -E 's/[^=]*=//' | command xargs
+        )"
 
         ##  split alias body into words;
         _split_cmd_line "$str0"
