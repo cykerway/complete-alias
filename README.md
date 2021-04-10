@@ -29,13 +29,15 @@ automagical shell alias completion;
 
         see faq;
 
-2.  append `complete_alias` to `~/.bash_completion`:
+2.  source `complete_alias` in `~/.bash_completion`:
 
-        cat complete_alias >> ~/.bash_completion
+        . {complete_alias}
+
+    where `{complete_alias}` is the path of `complete_alias`;
 
 ## usage
 
-1.  add your own aliases in `~/.bash_completion`:
+1.  edit aliases to complete in `complete_alias`:
 
     for example, to complete aliases `foo`, `bar` and `baz`:
 
@@ -50,7 +52,9 @@ automagical shell alias completion;
 to complete alias `sctl` aliased to `systemctl`:
 
     $ alias sctl='systemctl'
-    $ echo "complete -F _complete_alias sctl" >> ~/.bash_completion
+    $ cp complete_alias ~/.complete_alias
+    $ echo ". ~/.complete_alias" >> ~/.bash_completion
+    $ echo "complete -F _complete_alias sctl" >> ~/.complete_alias
     $ sctl <tab>
     add-requires
     add-wants
@@ -108,6 +112,19 @@ to complete alias `sctl` aliased to `systemctl`:
         filename will cause an infinite loop;
 
         now install is complete; add your own aliases in `~/.complete_alias.sh`;
+
+-   how to complete *all* my aliases?
+
+    use this one-liner:
+
+        complete -F _complete_alias $( alias | perl -lne 'print "$1" if /^alias ([^=]*)=/' )
+
+    it works like this:
+
+        complete -F _complete_alias foo
+        complete -F _complete_alias bar
+        complete -F _complete_alias baz
+        complete -F _complete_alias ...
 
 ## license
 
