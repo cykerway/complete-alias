@@ -18,7 +18,8 @@ automagical shell alias completion;
 
             dnf install bash-completion     ##  fedora
             apt install bash-completion     ##  debian
-            zypper install bash-completion  ##  SUSE
+
+        for other linux distros, see faq;
 
     -   macos (experimental):
 
@@ -113,6 +114,18 @@ to complete alias `sctl` aliased to `systemctl`:
         filename will cause an infinite loop;
 
         now install is complete; add your own aliases in `~/.complete_alias.sh`;
+
+-   how to install `bash-completion` on other linux distros?
+
+    these commands are sourced from wikis and users:
+
+        pacman -S bash-completion               ##  arch
+        yum install bash-completion             ##  centos
+        emerge --ask app-shells/bash-completion ##  gentoo
+        zypper install bash-completion          ##  suse
+        apt install bash-completion             ##  ubuntu
+
+    these commands are not tested; open a ticket if you find them not working;
 
 -   how to complete *all* my aliases?
 
