@@ -18,6 +18,7 @@ automagical shell alias completion;
 
             dnf install bash-completion     ##  fedora
             apt install bash-completion     ##  debian
+            zypper install bash-completion  ##  SUSE
 
     -   macos (experimental):
 
