@@ -330,8 +330,9 @@ _expand_alias() {
         done
 
         ##  now `j` is at the beginning of word `$COMP_WORDS[$beg]`; and we know
-        ##  the index range is `[j, j+${#cmd})`; update `$COMP_LINE` and
-        ##  `$COMP_POINT`;
+        ##  the index range is `[j, j+${#cmd})`;
+
+        ##  update `$COMP_LINE` and `$COMP_POINT`;
         COMP_LINE="${COMP_LINE:0:j}${str0}${COMP_LINE:j+${#cmd}}"
         if (( $COMP_POINT < j )); then
             :
@@ -357,10 +358,16 @@ _expand_alias() {
             (( COMP_CWORD += ${#words0[@]} - 1 ))
         fi
 
-        ##  update `$ignore` if it is not empty; if `$ignore` is not empty, then
-        ##  we know it is not equal to `$beg` because we checked that in case 2;
-        if [[ -n "$ignore" ]] && (( $ignore > $beg )); then
-            (( ignore += ${#words0[@]} - 1 ))
+        ##  update `$ignore` if it is not empty; if so, we know `$ignore` is not
+        ##  equal to `$beg` because we checked that in case 2; we need to update
+        ##  `$ignore` only when `$ignore > $beg`; save this condition in a local
+        ##  var `$ignore_gt_beg` because we need it later;
+        if [[ -n "$ignore" ]]; then
+            local ignore_gt_beg=0
+            if (( $ignore > $beg )); then
+                ignore_gt_beg=1
+                (( ignore += ${#words0[@]} - 1 ))
+            fi
         fi
 
         ##  recursively expand part 0;
@@ -372,6 +379,11 @@ _expand_alias() {
             "${#used0[@]}" \
             "${used0[@]}"
         local diff0="$_retval"
+
+        ##  update `$ignore` if it is not empty and `$ignore_gt_beg` is true;
+        if [[ -n "$ignore" ]] && (( $ignore_gt_beg == 1 )); then
+            (( ignore += $diff0 ))
+        fi
 
         ##  recursively expand part 1;
         if [[ -n "$str0" ]] && [[ "${str0: -1}" == ' ' ]]; then
