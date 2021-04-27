@@ -316,6 +316,12 @@ _expand_alias() {
         )"
 
         ##  split alias body into words;
+        ##
+        ##  warn: `_split_cmd_line` drops redirections and assignments only in
+        ##  `COMP_WORDS` not in `COMP_LINE`; this may cause a mismatch between
+        ##  these two variables; this seems ok for now; if a bug is found from
+        ##  this mismatch in the future, consider dropping them in `COMP_LINE`
+        ##  as well;
         _split_cmd_line "$str0"
         local words0=( "${_retval[@]}" )
 
