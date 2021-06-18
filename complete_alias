@@ -537,12 +537,9 @@ _complete_alias() {
 }
 
 ##  ============================================================================
-##  complete user-defined aliases;
-##
-##  uncomment and edit these lines to complete your aliases;
+##  complete all user-defined aliases
 ##  ============================================================================
 
-#complete -F _complete_alias myalias1
-#complete -F _complete_alias myalias2
-#complete -F _complete_alias myalias3
-
+for x in $(alias | cut -d "=" -f 1 | cut -d " " -f 2); do
+  complete -F _complete_alias $x
+done
