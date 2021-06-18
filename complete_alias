@@ -538,11 +538,14 @@ _complete_alias() {
 
 ##  ============================================================================
 ##  complete user-defined aliases;
-##
-##  uncomment and edit these lines to complete your aliases;
 ##  ============================================================================
 
+##  uncomment and edit these lines to complete your aliases;
 #complete -F _complete_alias myalias1
 #complete -F _complete_alias myalias2
 #complete -F _complete_alias myalias3
+
+##  alternatively, uncomment these lines to complete all your aliases;
+#complete -F _complete_alias \
+#    $( alias | perl -lne 'print "$1" if /^alias ([^=]*)=/' )
 
