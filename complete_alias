@@ -537,9 +537,15 @@ _complete_alias() {
 }
 
 ##  ============================================================================
-##  complete all user-defined aliases
+##  complete user-defined aliases;
 ##  ============================================================================
 
-for x in $(alias | cut -d "=" -f 1 | cut -d " " -f 2); do
-  complete -F _complete_alias $x
-done
+##  uncomment and edit these lines to complete your aliases;
+#complete -F _complete_alias myalias1
+#complete -F _complete_alias myalias2
+#complete -F _complete_alias myalias3
+
+##  alternatively, uncomment these lines to complete all your aliases;
+#complete -F _complete_alias \
+#    $( alias | perl -lne 'print "$1" if /^alias ([^=]*)=/' )
+
