@@ -131,7 +131,7 @@ to complete alias `sctl` aliased to `systemctl`:
 
     use this one-liner:
 
-        complete -F _complete_alias $( alias | perl -lne 'print "$1" if /^alias ([^=]*)=/' )
+        complete -F _complete_alias "${!BASH_ALIASES[@]}"
 
     it works like this:
 
