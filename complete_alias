@@ -331,14 +331,15 @@ _expand_alias() {
         )"
 
         ##  split alias body into words;
-        ##
-        ##  warn: `_split_cmd_line` drops redirections and assignments only in
-        ##  `COMP_WORDS` not in `COMP_LINE`; this may cause a mismatch between
-        ##  these two variables; this seems ok for now; if a bug is found from
-        ##  this mismatch in the future, consider dropping them in `COMP_LINE`
-        ##  as well;
         _split_cmd_line "$str0"
         local words0=( "${_retval[@]}" )
+
+        ##  rebuild alias body; we need this because function `_split_cmd_line`
+        ##  drops redirections and assignments, and only keeps the last command
+        ##  in the last pipeline, in `words0`; therefore `str0` is not a simple
+        ##  concat of `words0`; we rebuild this simple concat as `nstr0`; maybe
+        ##  it is easier to view `str0` as raw and `nstr0` as genuine;
+        local nstr0="${words0[*]}"
 
         ##  find index range of word `$COMP_WORDS[$beg]` in string `$COMP_LINE`;
         local i=0 j=0
@@ -354,14 +355,14 @@ _expand_alias() {
         ##  the index range is `[j, j+${#cmd})`;
 
         ##  update `$COMP_LINE` and `$COMP_POINT`;
-        COMP_LINE="${COMP_LINE:0:j}${str0}${COMP_LINE:j+${#cmd}}"
+        COMP_LINE="${COMP_LINE:0:j}${nstr0}${COMP_LINE:j+${#cmd}}"
         if (( $COMP_POINT < j )); then
             :
         elif (( $COMP_POINT < j + ${#cmd} )); then
             ##  set current cursor position to the end of replacement string;
-            (( COMP_POINT = j + ${#str0} ))
+            (( COMP_POINT = j + ${#nstr0} ))
         else
-            (( COMP_POINT += ${#str0} - ${#cmd} ))
+            (( COMP_POINT += ${#nstr0} - ${#cmd} ))
         fi
 
         ##  update `$COMP_WORDS` and `$COMP_CWORD`;
@@ -406,7 +407,7 @@ _expand_alias() {
             (( ignore += $diff0 ))
         fi
 
-        ##  recursively expand part 1;
+        ##  recursively expand part 1; must check `str0` not `nstr0`;
         if [[ -n "$str0" ]] && [[ "${str0: -1}" == ' ' ]]; then
             local used1=( "${used[@]}" )
             _expand_alias \
