@@ -113,6 +113,21 @@ _split_cmd_line() {
                 (( j++ ))
             elif [[ "\'" == "${str:j:2}" ]]; then
                 (( j++ ))
+            elif [[ '&&' == "${str:j:2}" ]]; then
+                words=()
+                (( i = j + 2 ))
+            elif [[ '||' == "${str:j:2}" ]]; then
+                words=()
+                (( i = j + 2 ))
+            elif [[ '&' == "${str:j:1}" ]]; then
+                words=()
+                (( i = j + 1 ))
+            elif [[ '|' == "${str:j:1}" ]]; then
+                words=()
+                (( i = j + 1 ))
+            elif [[ ';' == "${str:j:1}" ]]; then
+                words=()
+                (( i = j + 1 ))
             elif [[ "><=" == *"${str:j:1}"* ]]; then
                 found_redass=1
             elif [[ $' \t\n' == *"${str:j:1}"* ]]; then
@@ -129,7 +144,7 @@ _split_cmd_line() {
                     fi
                 fi
                 (( i = j + 1 ))
-            elif [[ ";|&:" == *"${str:j:1}"* ]]; then
+            elif [[ ":" == *"${str:j:1}"* ]]; then
                 if (( i < j )); then
                     if (( $found_redass == 1 )); then
                         if (( $check_redass == 0 )); then
