@@ -109,13 +109,45 @@ __compal__split_cmd_line() {
     ##  bool: found (outmost) redirection or assignment in current word;
     local found_redass=0
 
-    ##  examine each char of `str`;
+    ##  examine each char of `str`; test branches are ordered; this order has
+    ##  two importances: first is to respect substring relationship (eg: `&&`
+    ##  must be tested before `&`); second is to test in optimistic order for
+    ##  speeding up the testing; the first importance is compulsory and takes
+    ##  precedence;
     local i=0 j=0
     for (( ; j < ${#str}; j++ )); do
         if (( ${#sta[@]} == 0 )); then
             if [[ "${str:j:1}" =~ [_a-zA-Z0-9] ]]; then
-                ##  optimistic branch first to speed up `if` tests;
                 :
+            elif [[ $' \t\n' == *"${str:j:1}"* ]]; then
+                if (( i < j )); then
+                    if (( $found_redass == 1 )); then
+                        if (( $check_redass == 0 )); then
+                            words+=( "${str:i:j-i}" )
+                        fi
+                        found_redass=0
+                    else
+                        ##  no redass in current word; stop checking;
+                        check_redass=0
+                        words+=( "${str:i:j-i}" )
+                    fi
+                fi
+                (( i = j + 1 ))
+            elif [[ ":" == *"${str:j:1}"* ]]; then
+                if (( i < j )); then
+                    if (( $found_redass == 1 )); then
+                        if (( $check_redass == 0 )); then
+                            words+=( "${str:i:j-i}" )
+                        fi
+                        found_redass=0
+                    else
+                        ##  no redass in current word; stop checking;
+                        check_redass=0
+                        words+=( "${str:i:j-i}" )
+                    fi
+                fi
+                words+=( "${str:j:1}" )
+                (( i = j + 1 ))
             elif [[ '$(' == "${str:j:2}" ]]; then
                 sta+=( ')' )
                 (( j++ ))
@@ -158,35 +190,6 @@ __compal__split_cmd_line() {
                 (( i = j + 1 ))
             elif [[ "><=" == *"${str:j:1}"* ]]; then
                 found_redass=1
-            elif [[ $' \t\n' == *"${str:j:1}"* ]]; then
-                if (( i < j )); then
-                    if (( $found_redass == 1 )); then
-                        if (( $check_redass == 0 )); then
-                            words+=( "${str:i:j-i}" )
-                        fi
-                        found_redass=0
-                    else
-                        ##  no redass in current word; stop checking;
-                        check_redass=0
-                        words+=( "${str:i:j-i}" )
-                    fi
-                fi
-                (( i = j + 1 ))
-            elif [[ ":" == *"${str:j:1}"* ]]; then
-                if (( i < j )); then
-                    if (( $found_redass == 1 )); then
-                        if (( $check_redass == 0 )); then
-                            words+=( "${str:i:j-i}" )
-                        fi
-                        found_redass=0
-                    else
-                        ##  no redass in current word; stop checking;
-                        check_redass=0
-                        words+=( "${str:i:j-i}" )
-                    fi
-                fi
-                words+=( "${str:j:1}" )
-                (( i = j + 1 ))
             fi
         elif [[ "${sta[-1]}" == ')' ]]; then
             if [[ ')' == "${str:j:1}" ]]; then
