@@ -26,10 +26,10 @@
 ##  ============================================================================
 
 ##  register for keeping function return value;
-_retval=
+__compal__retval=
 
 ##  refcnt for alias expansion; expand aliases iff `_refcnt == 0`;
-_refcnt=0
+__compal__refcnt=0
 
 ##  an associative array of vanilla completions, keyed by command names; these
 ##  completions are alias-free, and fetched before `_complete_alias` is set as
@@ -44,7 +44,7 @@ _refcnt=0
 ##      _vanilla_cspecs["unalias"]="complete -a unalias"
 ##      ...
 ##
-declare -A _vanilla_cspecs
+declare -A __compal__vanilla_cspecs
 
 ##  ============================================================================
 ##  function;
@@ -312,7 +312,7 @@ __compal__split_cmd_line() {
     unset sta
 
     ##  return value;
-    _retval=( "${words[@]}" )
+    __compal__retval=( "${words[@]}" )
 }
 
 ##  expand aliases in command line;
@@ -335,7 +335,7 @@ __compal__expand_alias() {
 
     if (( $beg == $end )) ; then
         ##  case 1: range is empty;
-        _retval=0
+        __compal__retval=0
     elif [[ -n "$ignore" ]] && (( $beg == $ignore )); then
         ##  case 2: beg index is ignored; pass it;
         __compal__expand_alias \
@@ -346,10 +346,10 @@ __compal__expand_alias() {
             "${used[@]}"
     elif ! alias "${COMP_WORDS[$beg]}" &>/dev/null; then
         ##  case 3: command is not an alias;
-        _retval=0
+        __compal__retval=0
     elif ( __compal__inarr "${COMP_WORDS[$beg]}" "${used[@]}" ); then
         ##  case 4: command is an used alias;
-        _retval=0
+        __compal__retval=0
     else
         ##  case 5: command is an unused alias;
 
@@ -363,7 +363,7 @@ __compal__expand_alias() {
 
         ##  split alias body into words;
         __compal__split_cmd_line "$str0"
-        local words0=( "${_retval[@]}" )
+        local words0=( "${__compal__retval[@]}" )
 
         ##  rebuild alias body; we need this because function `_split_cmd_line`
         ##  drops redirections and assignments, and only keeps the last command
@@ -431,7 +431,7 @@ __compal__expand_alias() {
             "$ignore" \
             "${#used0[@]}" \
             "${used0[@]}"
-        local diff0="$_retval"
+        local diff0="$__compal__retval"
 
         ##  update `$ignore` if it is not empty and `$ignore_gt_beg` is true;
         if [[ -n "$ignore" ]] && (( $ignore_gt_beg == 1 )); then
@@ -447,13 +447,13 @@ __compal__expand_alias() {
                 "$ignore" \
                 "${#used1[@]}" \
                 "${used1[@]}"
-            local diff1="$_retval"
+            local diff1="$__compal__retval"
         else
             local diff1=0
         fi
 
         ##  return value;
-        _retval=$(( ${#words0[@]} - 1 + diff0 + diff1 ))
+        __compal__retval=$(( ${#words0[@]} - 1 + diff0 + diff1 ))
     fi
 }
 
@@ -465,17 +465,17 @@ __compal__set_vanilla_completion() {
     local cmd="$1"
 
     ##  search `_vanilla_cspecs` for a completion function of this command;
-    for _cmd in "${!_vanilla_cspecs[@]}"; do
+    for _cmd in "${!__compal__vanilla_cspecs[@]}"; do
         if [[ "$_cmd" == "$cmd" ]]; then
             ##  load vanilla completion of this command;
-            local line="${_vanilla_cspecs[$_cmd]}"
+            local line="${__compal__vanilla_cspecs[$_cmd]}"
 
             ##  due to some issues with `complete -p`, it is not ok to eval its
             ##  output directly; instead, we can parse its output and run it in
             ##  an argv fashion; `_split_cmd_line` looks good for this job; see
             ##  other comments for details;
             __compal__split_cmd_line "$line"
-            local line_args=( "${_retval[@]}" )
+            local line_args=( "${__compal__retval[@]}" )
 
             ##  run parsed completion command;
             "${line_args[@]}"
@@ -518,71 +518,6 @@ __compal__set_vanilla_completion_custom() {
 #            _completion_loader "$cmd"
 #            ;;
 #    esac
-}
-
-##  programmable completion function for aliases; this is the function to be set
-##  with `complete -F`;
-_complete_alias() {
-    ##  get alias command;
-    local cmd="${COMP_WORDS[0]}"
-
-    ##  we expand aliases only for the original command line (ie: the command
-    ##  line after which user pressed `<tab>`); this means we expand aliases
-    ##  only in the outmost call of this function; we ensure this by using a
-    ##  refcnt and expand aliases iff the refcnt is equal to 0;
-    if (( _refcnt == 0 )); then
-
-        ##  find index range of word `$COMP_WORDS[$COMP_CWORD]` in string
-        ##  `$COMP_LINE`; dont expand this word if `$COMP_POINT` (cursor
-        ##  position) lies in this range because the word may be incomplete;
-        local i=0 j=0
-        for (( ; i <= $COMP_CWORD; i++ )); do
-            for (( ; j <= ${#COMP_LINE}; j++ )); do
-                [[ "${COMP_LINE:j}" == "${COMP_WORDS[i]}"* ]] && break
-            done
-            (( i == $COMP_CWORD )) && break
-            (( j += ${#COMP_WORDS[i]} ))
-        done
-
-        ##  now `j` is at the beginning of word `$COMP_WORDS[$COMP_CWORD]`; and
-        ##  we know the index range is `[j, j+${#COMP_WORDS[$COMP_CWORD]}]`; we
-        ##  include the right endpoint to cover the case where cursor is at the
-        ##  exact end of the word; compare the index range with `$COMP_POINT`;
-        if (( j <= $COMP_POINT )) && \
-            (( $COMP_POINT <= j + ${#COMP_WORDS[$COMP_CWORD]} )); then
-            local ignore="$COMP_CWORD"
-        else
-            local ignore=""
-        fi
-
-        ##  expand aliases;
-        __compal__expand_alias 0 "${#COMP_WORDS[@]}" "$ignore" 0
-    fi
-
-    ##  increase refcnt;
-    (( _refcnt++ ))
-
-    ##  since aliases have been fully expanded, we no longer need to consider
-    ##  aliases in the resulting command line; thus we now set the completion
-    ##  function for this alias to the vanilla one, which is alias-free; this
-    ##  avoids an infinite recursion when a command is aliased to itself (ie:
-    ##  `alias ls='ls -a'`);
-    ##
-    ##  we use two functions for this job, in ascending precedence; they work
-    ##  together on setting the vanilla completion function for this command;
-    __compal__set_vanilla_completion "$cmd"
-    __compal__set_vanilla_completion_custom "$cmd"
-
-    ##  do actual completion; `_command_offset` is a meta-command completion
-    ##  function provided by `bash-completion`; it is not guaranteed to work
-    ##  with argument `0`, but looking at its code (version 2.11) it should;
-    _command_offset 0
-
-    ##  reset this command completion function to `_complete_alias`;
-    complete -F _complete_alias "$cmd"
-
-    ##  decrease refcnt;
-    (( _refcnt-- ))
 }
 
 ##  save vanilla completions; run this function when this script is sourced;
@@ -635,7 +570,7 @@ __compal__save_vanilla_cspecs() {
         ##  also without command substitutions, etc.; we should be able to rerun
         ##  this command in an argv fashion (eg: `"${line_args[@]}"`);
         __compal__split_cmd_line "$line"
-        local line_args=( "${_retval[@]}" )
+        local line_args=( "${__compal__retval[@]}" )
 
         ##  ensure this is a completion command;
         [[ "${line_args[0]}" == "complete" ]] || continue
@@ -654,9 +589,74 @@ __compal__save_vanilla_cspecs() {
         local line_cmd="${line_args[-1]}"
 
         ##  save this vanilla completion into `_vanilla_cspecs`;
-        _vanilla_cspecs["$line_cmd"]="$line"
+        __compal__vanilla_cspecs["$line_cmd"]="$line"
 
     done < <(complete -p)
+}
+
+##  programmable completion function for aliases; this is the function to be set
+##  with `complete -F`;
+_complete_alias() {
+    ##  get alias command;
+    local cmd="${COMP_WORDS[0]}"
+
+    ##  we expand aliases only for the original command line (ie: the command
+    ##  line after which user pressed `<tab>`); this means we expand aliases
+    ##  only in the outmost call of this function; we ensure this by using a
+    ##  refcnt and expand aliases iff the refcnt is equal to 0;
+    if (( __compal__refcnt == 0 )); then
+
+        ##  find index range of word `$COMP_WORDS[$COMP_CWORD]` in string
+        ##  `$COMP_LINE`; dont expand this word if `$COMP_POINT` (cursor
+        ##  position) lies in this range because the word may be incomplete;
+        local i=0 j=0
+        for (( ; i <= $COMP_CWORD; i++ )); do
+            for (( ; j <= ${#COMP_LINE}; j++ )); do
+                [[ "${COMP_LINE:j}" == "${COMP_WORDS[i]}"* ]] && break
+            done
+            (( i == $COMP_CWORD )) && break
+            (( j += ${#COMP_WORDS[i]} ))
+        done
+
+        ##  now `j` is at the beginning of word `$COMP_WORDS[$COMP_CWORD]`; and
+        ##  we know the index range is `[j, j+${#COMP_WORDS[$COMP_CWORD]}]`; we
+        ##  include the right endpoint to cover the case where cursor is at the
+        ##  exact end of the word; compare the index range with `$COMP_POINT`;
+        if (( j <= $COMP_POINT )) && \
+            (( $COMP_POINT <= j + ${#COMP_WORDS[$COMP_CWORD]} )); then
+            local ignore="$COMP_CWORD"
+        else
+            local ignore=""
+        fi
+
+        ##  expand aliases;
+        __compal__expand_alias 0 "${#COMP_WORDS[@]}" "$ignore" 0
+    fi
+
+    ##  increase refcnt;
+    (( __compal__refcnt++ ))
+
+    ##  since aliases have been fully expanded, we no longer need to consider
+    ##  aliases in the resulting command line; thus we now set the completion
+    ##  function for this alias to the vanilla one, which is alias-free; this
+    ##  avoids an infinite recursion when a command is aliased to itself (ie:
+    ##  `alias ls='ls -a'`);
+    ##
+    ##  we use two functions for this job, in ascending precedence; they work
+    ##  together on setting the vanilla completion function for this command;
+    __compal__set_vanilla_completion "$cmd"
+    __compal__set_vanilla_completion_custom "$cmd"
+
+    ##  do actual completion; `_command_offset` is a meta-command completion
+    ##  function provided by `bash-completion`; it is not guaranteed to work
+    ##  with argument `0`, but looking at its code (version 2.11) it should;
+    _command_offset 0
+
+    ##  reset this command completion function to `_complete_alias`;
+    complete -F _complete_alias "$cmd"
+
+    ##  decrease refcnt;
+    (( __compal__refcnt-- ))
 }
 
 ##  main function;
@@ -664,6 +664,10 @@ __compal__main() {
     ##  save vanilla completions;
     __compal__save_vanilla_cspecs
 }
+
+##  ============================================================================
+##  script;
+##  ============================================================================
 
 ##  run main function;
 __compal__main
