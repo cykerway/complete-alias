@@ -113,7 +113,10 @@ __compal__split_cmd_line() {
     local i=0 j=0
     for (( ; j < ${#str}; j++ )); do
         if (( ${#sta[@]} == 0 )); then
-            if [[ '$(' == "${str:j:2}" ]]; then
+            if [[ "${str:j:1}" =~ [_a-zA-Z0-9] ]]; then
+                ##  optimistic branch first to speed up `if` tests;
+                :
+            elif [[ '$(' == "${str:j:2}" ]]; then
                 sta+=( ')' )
                 (( j++ ))
             elif [[ '`' == "${str:j:1}" ]]; then
