@@ -129,7 +129,7 @@ to complete alias `sctl` aliased to `systemctl`:
 
 -   how to complete *all* my aliases?
 
-    use this one-liner:
+    run this one-liner *after* all aliases have been defined:
 
         complete -F _complete_alias "${!BASH_ALIASES[@]}"
 
@@ -138,7 +138,19 @@ to complete alias `sctl` aliased to `systemctl`:
         complete -F _complete_alias foo
         complete -F _complete_alias bar
         complete -F _complete_alias baz
-        complete -F _complete_alias ...
+        ...
+
+    note that if you simply put this one-liner in `complete_alias` code, things
+    may not work, depending on the order of file sourcing, which in turn varies
+    across user configurations; the correct way to use this one-liner is to put
+    it in the same file where aliases are defined; for example, if your aliases
+    are defined in `~/.bashrc`, then that file should look like this:
+
+        alias foo='...'
+        alias bar='...'
+        alias baz='...'
+        ...
+        complete -F _complete_alias "${!BASH_ALIASES[@]}"
 
 ## license
 
