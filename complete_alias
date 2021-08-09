@@ -589,6 +589,7 @@ _complete_alias() {
 ##  this ensures vanilla completions of alias commands are fetched and saved
 ##  before they are overwritten by `complete -F _complete_alias`;
 _save_vanilla_cspecs() {
+    ##  `complete -p` prints one command on each line; so we can loop;
     while IFS= read -r line; do
 
         ##  despite as described in `man bash`, `complete -p` does not always
@@ -597,18 +598,42 @@ _save_vanilla_cspecs() {
         ##
         ##  as an example, when `complete -p` prints:
         ##
+        ##      $ complete -p
         ##      complete -F _known_hosts "/tmp/aaa   bbb"
         ##
-        ##  copy-paste running this line gives:
+        ##  copy-paste running the above output gives wrong result:
         ##
+        ##      $ complete -F _known_hosts "/tmp/aaa   bbb"
+        ##      $ complete -p
         ##      complete -F _known_hosts /tmp/aaa   bbb
         ##
-        ##  this means we must parse this command line and run parsed result;
+        ##  the correct command to give the same `complete -p` result is:
+        ##
+        ##      $ complete -F _known_hosts '"/tmp/aaa   bbb"'
+        ##      $ complete -p
+        ##      complete -F _known_hosts "/tmp/aaa   bbb"
+        ##
+        ##  to see another issue, this command gives a different result:
+        ##
+        ##      $ complete -F _known_hosts '/tmp/aaa\ \ \ bbb'
+        ##      $ complete -p
+        ##      complete -F _known_hosts /tmp/aaa\ \ \ bbb
+        ##
+        ##  note that these two `complete -p` results are *not* the same:
+        ##
+        ##      complete -F _known_hosts "/tmp/aaa   bbb"
+        ##      complete -F _known_hosts /tmp/aaa\ \ \ bbb
+        ##
+        ##  despite this is true:
+        ##
+        ##      [[ "/tmp/aaa   bbb" == /tmp/aaa\ \ \ bbb ]]
+        ##
+        ##  so we must parse the `complete -p` result and run parsed result;
         ##
         ##  using `_split_cmd_line` looks fine for a `complete -p` command line,
         ##  because it has only one command without redirections or assignments,
         ##  also without command substitutions, etc.; we should be able to rerun
-        ##  this command using `"${line_args[@]}"`;
+        ##  this command in an argv fashion (eg: `"${line_args[@]}"`);
         _split_cmd_line "$line"
         local line_args=( "${_retval[@]}" )
 
@@ -620,7 +645,9 @@ _save_vanilla_cspecs() {
         ! _inarr "-D" "${line_args[@]}" || continue
 
         ##  ignore `complete -F _complete_alias` completion command; the reason
-        ##  is vanilla completions must be alias-free;
+        ##  is vanilla completions must be alias-free; although it is better to
+        ##  check with `$line_args`, string `-F _complete_alias` rarely appears
+        ##  in a command name; so we can check with `$line`;
         [[ "$line" != *"-F _complete_alias"* ]] || continue
 
         ##  get the command being completed by this line;
@@ -638,6 +665,7 @@ _main() {
     _save_vanilla_cspecs
 }
 
+##  run main function;
 _main
 
 ##  ============================================================================
