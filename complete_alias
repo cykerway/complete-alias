@@ -51,7 +51,7 @@ declare -A _vanilla_cspecs
 ##  ============================================================================
 
 ##  debug;
-_debug() {
+__compal__debug() {
     echo
     echo "#COMP_WORDS=${#COMP_WORDS[@]}"
     echo "COMP_WORDS=("
@@ -69,7 +69,7 @@ _debug() {
 ##
 ##  $@
 ##  :   ( elem arr[0] arr[1] ... )
-_inarr() {
+__compal__inarr() {
     for e in "${@:2}"; do
         [[ "$e" == "$1" ]] && return 0
     done
@@ -88,7 +88,7 @@ _inarr() {
 ##
 ##  $1
 ##  :   command line string;
-_split_cmd_line() {
+__compal__split_cmd_line() {
     ##  command line string;
     local str="$1"
 
@@ -329,7 +329,7 @@ _split_cmd_line() {
 ##  :   used aliases;
 ##  $?
 ##  :   difference of `${#COMP_WORDS}` before and after expansion;
-_expand_alias() {
+__compal__expand_alias() {
     local beg="$1" end="$2" ignore="$3" n_used="$4"; shift 4
     local used=( "${@:1:$n_used}" ); shift "$n_used"
 
@@ -338,7 +338,7 @@ _expand_alias() {
         _retval=0
     elif [[ -n "$ignore" ]] && (( $beg == $ignore )); then
         ##  case 2: beg index is ignored; pass it;
-        _expand_alias \
+        __compal__expand_alias \
             "$(( $beg + 1 ))" \
             "$end" \
             "$ignore" \
@@ -347,7 +347,7 @@ _expand_alias() {
     elif ! alias "${COMP_WORDS[$beg]}" &>/dev/null; then
         ##  case 3: command is not an alias;
         _retval=0
-    elif ( _inarr "${COMP_WORDS[$beg]}" "${used[@]}" ); then
+    elif ( __compal__inarr "${COMP_WORDS[$beg]}" "${used[@]}" ); then
         ##  case 4: command is an used alias;
         _retval=0
     else
@@ -362,7 +362,7 @@ _expand_alias() {
         )"
 
         ##  split alias body into words;
-        _split_cmd_line "$str0"
+        __compal__split_cmd_line "$str0"
         local words0=( "${_retval[@]}" )
 
         ##  rebuild alias body; we need this because function `_split_cmd_line`
@@ -425,7 +425,7 @@ _expand_alias() {
 
         ##  recursively expand part 0;
         local used0=( "${used[@]}" "$cmd" )
-        _expand_alias \
+        __compal__expand_alias \
             "$beg" \
             "$(( $beg + ${#words0[@]} ))" \
             "$ignore" \
@@ -441,7 +441,7 @@ _expand_alias() {
         ##  recursively expand part 1; must check `str0` not `nstr0`;
         if [[ -n "$str0" ]] && [[ "${str0: -1}" == ' ' ]]; then
             local used1=( "${used[@]}" )
-            _expand_alias \
+            __compal__expand_alias \
                 "$(( $beg + ${#words0[@]} + $diff0 ))" \
                 "$(( $end + ${#words0[@]} - 1 + $diff0 ))" \
                 "$ignore" \
@@ -461,7 +461,7 @@ _expand_alias() {
 ##
 ##  $1
 ##  :   alias command;
-_set_vanilla_completion() {
+__compal__set_vanilla_completion() {
     local cmd="$1"
 
     ##  search `_vanilla_cspecs` for a completion function of this command;
@@ -474,7 +474,7 @@ _set_vanilla_completion() {
             ##  output directly; instead, we can parse its output and run it in
             ##  an argv fashion; `_split_cmd_line` looks good for this job; see
             ##  other comments for details;
-            _split_cmd_line "$line"
+            __compal__split_cmd_line "$line"
             local line_args=( "${_retval[@]}" )
 
             ##  run parsed completion command;
@@ -497,7 +497,7 @@ _set_vanilla_completion() {
 ##
 ##  $1
 ##  :   alias command;
-_set_vanilla_completion_custom() {
+__compal__set_vanilla_completion_custom() {
     local cmd="$1"
 
     ##  uncomment and edit these lines to customize vanilla completions;
@@ -556,7 +556,7 @@ _complete_alias() {
         fi
 
         ##  expand aliases;
-        _expand_alias 0 "${#COMP_WORDS[@]}" "$ignore" 0
+        __compal__expand_alias 0 "${#COMP_WORDS[@]}" "$ignore" 0
     fi
 
     ##  increase refcnt;
@@ -570,8 +570,8 @@ _complete_alias() {
     ##
     ##  we use two functions for this job, in ascending precedence; they work
     ##  together on setting the vanilla completion function for this command;
-    _set_vanilla_completion "$cmd"
-    _set_vanilla_completion_custom "$cmd"
+    __compal__set_vanilla_completion "$cmd"
+    __compal__set_vanilla_completion_custom "$cmd"
 
     ##  do actual completion; `_command_offset` is a meta-command completion
     ##  function provided by `bash-completion`; it is not guaranteed to work
@@ -588,7 +588,7 @@ _complete_alias() {
 ##  save vanilla completions; run this function when this script is sourced;
 ##  this ensures vanilla completions of alias commands are fetched and saved
 ##  before they are overwritten by `complete -F _complete_alias`;
-_save_vanilla_cspecs() {
+__compal__save_vanilla_cspecs() {
     ##  `complete -p` prints one command on each line; so we can loop;
     while IFS= read -r line; do
 
@@ -634,7 +634,7 @@ _save_vanilla_cspecs() {
         ##  because it has only one command without redirections or assignments,
         ##  also without command substitutions, etc.; we should be able to rerun
         ##  this command in an argv fashion (eg: `"${line_args[@]}"`);
-        _split_cmd_line "$line"
+        __compal__split_cmd_line "$line"
         local line_args=( "${_retval[@]}" )
 
         ##  ensure this is a completion command;
@@ -642,7 +642,7 @@ _save_vanilla_cspecs() {
 
         ##  ignore `complete -D` completion command; such command is irrelevant
         ##  because this script does not change the default completion;
-        ! _inarr "-D" "${line_args[@]}" || continue
+        ! __compal__inarr "-D" "${line_args[@]}" || continue
 
         ##  ignore `complete -F _complete_alias` completion command; the reason
         ##  is vanilla completions must be alias-free; although it is better to
@@ -660,13 +660,13 @@ _save_vanilla_cspecs() {
 }
 
 ##  main function;
-_main() {
+__compal__main() {
     ##  save vanilla completions;
-    _save_vanilla_cspecs
+    __compal__save_vanilla_cspecs
 }
 
 ##  run main function;
-_main
+__compal__main
 
 ##  ============================================================================
 ##  complete user-defined aliases;
