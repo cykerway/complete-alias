@@ -31,6 +31,21 @@ _retval=
 ##  refcnt for alias expansion; expand aliases iff `_refcnt == 0`;
 _refcnt=0
 
+##  an associative array of vanilla completions, keyed by command names; these
+##  completions are alias-free, and fetched before `_complete_alias` is set as
+##  the completion function for alias commands; the way we ensure this partial
+##  order is to init this array when this script is sourced; the sourcing will
+##  happen before `complete -F _complete_alias ...` for obvious reasons;
+##
+##  the content of this array depends on user configurations; an example:
+##
+##      _vanilla_cspecs["tee"]="complete -F _longopt tee"
+##      _vanilla_cspecs["type"]="complete -c type"
+##      _vanilla_cspecs["unalias"]="complete -a unalias"
+##      ...
+##
+declare -A _vanilla_cspecs
+
 ##  ============================================================================
 ##  function;
 ##  ============================================================================
@@ -62,6 +77,14 @@ _inarr() {
 }
 
 ##  split command line into words;
+##
+##  warn: the output of this function is *not* a faithful split of the input;
+##  this function drops redirections and assignments, and only keeps the last
+##  command in the last pipeline;
+##
+##  warn: this function is made for alias body expansion; as such it does not
+##  support commmand substitutions, etc.; if you run its output as argv, then
+##  you run at your own risk; quotes and escapes may also disturb the result;
 ##
 ##  $1
 ##  :   command line string;
@@ -434,77 +457,73 @@ _expand_alias() {
     fi
 }
 
-##  set a command completion function to the default one; users may edit this
-##  function to fit their own needs;
-_set_default_completion() {
+##  set completion function of an alias command to the vanilla one;
+##
+##  $1
+##  :   alias command;
+_set_vanilla_completion() {
     local cmd="$1"
 
-    case "$cmd" in
-        bind)
-            complete -A binding "$cmd"
-            ;;
-        help)
-            complete -A helptopic "$cmd"
-            ;;
-        set)
-            complete -A setopt "$cmd"
-            ;;
-        shopt)
-            complete -A shopt "$cmd"
-            ;;
-        bg)
-            complete -A stopped -P '"%' -S '"' "$cmd"
-            ;;
-        service)
-            complete -F _service "$cmd"
-            ;;
-        unalias)
-            complete -a "$cmd"
-            ;;
-        builtin)
-            complete -b "$cmd"
-            ;;
-        command|type|which)
-            complete -c "$cmd"
-            ;;
-        fg|jobs|disown)
-            complete -j -P '"%' -S '"' "$cmd"
-            ;;
-        groups|slay|w|sux)
-            complete -u "$cmd"
-            ;;
-        readonly|unset)
-            complete -v "$cmd"
-            ;;
-        traceroute|traceroute6|tracepath|tracepath6|fping|fping6|telnet|rsh|\
-            rlogin|ftp|dig|mtr|ssh-installkeys|showmount)
-            complete -F _known_hosts "$cmd"
-            ;;
-        aoss|command|do|else|eval|exec|ltrace|nice|nohup|padsp|then|time|\
-            tsocks|vsound|xargs)
-            complete -F _command "$cmd"
-            ;;
-        fakeroot|gksu|gksudo|kdesudo|really)
-            complete -F _root_command "$cmd"
-            ;;
-        a2ps|awk|base64|bash|bc|bison|cat|chroot|colordiff|cp|csplit|cut|date|\
-            df|diff|dir|du|enscript|env|expand|fmt|fold|gperf|grep|grub|head|\
-            irb|ld|ldd|less|ln|ls|m4|md5sum|mkdir|mkfifo|mknod|mv|netstat|nl|\
-            nm|objcopy|objdump|od|paste|pr|ptx|readelf|rm|rmdir|sed|seq|\
-            sha{,1,224,256,384,512}sum|shar|sort|split|strip|sum|tac|tail|tee|\
-            texindex|touch|tr|uname|unexpand|uniq|units|vdir|wc|who)
-            complete -F _longopt "$cmd"
-            ;;
-        *)
-            _completion_loader "$cmd"
-            ;;
-    esac
+    ##  search `_vanilla_cspecs` for a completion function of this command;
+    for _cmd in "${!_vanilla_cspecs[@]}"; do
+        if [[ "$_cmd" == "$cmd" ]]; then
+            ##  load vanilla completion of this command;
+            local line="${_vanilla_cspecs[$_cmd]}"
+
+            ##  due to some issues with `complete -p`, it is not ok to eval its
+            ##  output directly; instead, we can parse its output and run it in
+            ##  an argv fashion; `_split_cmd_line` looks good for this job; see
+            ##  other comments for details;
+            _split_cmd_line "$line"
+            local line_args=( "${_retval[@]}" )
+
+            ##  run parsed completion command;
+            "${line_args[@]}"
+
+            ##  we are done here; so return;
+            return
+        fi
+    done
+
+    ##  if a specific vanilla completion of this command is not found, fallback
+    ##  to the knowledgeable completion function `_completion_loader`, which is
+    ##  basically an ensemble of many completion functions;
+    _completion_loader "$cmd"
+}
+
+##  this function works in the same way as `_set_vanilla_completion`, but runs
+##  at a later time and so takes higher precedence; you can edit this function
+##  to customize vanilla completions; this function does nothing by default;
+##
+##  $1
+##  :   alias command;
+_set_vanilla_completion_custom() {
+    local cmd="$1"
+
+    ##  uncomment and edit these lines to customize vanilla completions;
+#    case "$cmd" in
+#        command|type|which)
+#            complete -c "$cmd"
+#            ;;
+#        groups|slay|w|sux)
+#            complete -u "$cmd"
+#            ;;
+#        fakeroot|gksu|gksudo|kdesudo|really)
+#            complete -F _root_command "$cmd"
+#            ;;
+#        a2ps|awk|base64|bash|bc|bison)
+#            complete -F _longopt "$cmd"
+#            ;;
+#        *)
+#            _completion_loader "$cmd"
+#            ;;
+#    esac
 }
 
 ##  programmable completion function for aliases; this is the function to be set
 ##  with `complete -F`;
 _complete_alias() {
-    ##  get command;
+    ##  get alias command;
     local cmd="${COMP_WORDS[0]}"
 
     ##  we expand aliases only for the original command line (ie: the command
@@ -544,15 +563,19 @@ _complete_alias() {
     (( _refcnt++ ))
 
     ##  since aliases have been fully expanded, we no longer need to consider
-    ##  aliases in the resulting command line; so we now set this command
-    ##  completion function to the default one (which is alias-agnostic); this
-    ##  avoids infinite recursion when a command is aliased to itself (ie:
+    ##  aliases in the resulting command line; thus we now set the completion
+    ##  function for this alias to the vanilla one, which is alias-free; this
+    ##  avoids an infinite recursion when a command is aliased to itself (ie:
     ##  `alias ls='ls -a'`);
-    _set_default_completion "$cmd"
+    ##
+    ##  we use two functions for this job, in ascending precedence; they work
+    ##  together on setting the vanilla completion function for this command;
+    _set_vanilla_completion "$cmd"
+    _set_vanilla_completion_custom "$cmd"
 
     ##  do actual completion; `_command_offset` is a meta-command completion
     ##  function provided by `bash-completion`; it is not guaranteed to work
-    ##  with argument `0`, but looking at its code it should be;
+    ##  with argument `0`, but looking at its code (version 2.11) it should;
     _command_offset 0
 
     ##  reset this command completion function to `_complete_alias`;
@@ -561,6 +584,61 @@ _complete_alias() {
     ##  decrease refcnt;
     (( _refcnt-- ))
 }
+
+##  save vanilla completions; run this function when this script is sourced;
+##  this ensures vanilla completions of alias commands are fetched and saved
+##  before they are overwritten by `complete -F _complete_alias`;
+_save_vanilla_cspecs() {
+    while IFS= read -r line; do
+
+        ##  despite as described in `man bash`, `complete -p` does not always
+        ##  print an existing completion in a way that can be reused as input;
+        ##  what complicates the matter here are quotes and escapes;
+        ##
+        ##  as an example, when `complete -p` prints:
+        ##
+        ##      complete -F _known_hosts "/tmp/aaa   bbb"
+        ##
+        ##  copy-paste running this line gives:
+        ##
+        ##      complete -F _known_hosts /tmp/aaa   bbb
+        ##
+        ##  this means we must parse this command line and run parsed result;
+        ##
+        ##  using `_split_cmd_line` looks fine for a `complete -p` command line,
+        ##  because it has only one command without redirections or assignments,
+        ##  also without command substitutions, etc.; we should be able to rerun
+        ##  this command using `"${line_args[@]}"`;
+        _split_cmd_line "$line"
+        local line_args=( "${_retval[@]}" )
+
+        ##  ensure this is a completion command;
+        [[ "${line_args[0]}" == "complete" ]] || continue
+
+        ##  ignore `complete -D` completion command; such command is irrelevant
+        ##  because this script does not change the default completion;
+        ! _inarr "-D" "${line_args[@]}" || continue
+
+        ##  ignore `complete -F _complete_alias` completion command; the reason
+        ##  is vanilla completions must be alias-free;
+        [[ "$line" != *"-F _complete_alias"* ]] || continue
+
+        ##  get the command being completed by this line;
+        local line_cmd="${line_args[-1]}"
+
+        ##  save this vanilla completion into `_vanilla_cspecs`;
+        _vanilla_cspecs["$line_cmd"]="$line"
+
+    done < <(complete -p)
+}
+
+##  main function;
+_main() {
+    ##  save vanilla completions;
+    _save_vanilla_cspecs
+}
+
+_main
 
 ##  ============================================================================
 ##  complete user-defined aliases;
