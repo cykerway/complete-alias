@@ -542,7 +542,9 @@ _complete_alias() {
     ##  `alias ls='ls -a'`);
     _set_default_completion "$cmd"
 
-    ##  do actual completion;
+    ##  do actual completion; `_command_offset` is a meta-command completion
+    ##  function provided by `bash-completion`; it is not guaranteed to work
+    ##  with argument `0`, but looking at its code it should be;
     _command_offset 0
 
     ##  reset this command completion function to `_complete_alias`;
