@@ -556,11 +556,11 @@ _complete_alias() {
 ##  complete user-defined aliases;
 ##  ============================================================================
 
-##  uncomment and edit these lines to complete your aliases;
+##  to complete specific aliases, uncomment and edit these lines;
 #complete -F _complete_alias myalias1
 #complete -F _complete_alias myalias2
 #complete -F _complete_alias myalias3
 
-##  alternatively, uncomment this line to complete all your aliases;
+##  to complete all aliases, run this line after all aliases have been defined;
 #complete -F _complete_alias "${!BASH_ALIASES[@]}"
 
