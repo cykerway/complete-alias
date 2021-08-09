@@ -103,6 +103,8 @@ _split_cmd_line() {
                 sta+=( '"' )
             elif [[ "'" == "${str:j:1}" ]]; then
                 sta+=( "'" )
+            elif [[ '\ ' == "${str:j:2}" ]]; then
+                (( j++ ))
             elif [[ '\$' == "${str:j:2}" ]]; then
                 (( j++ ))
             elif [[ '\`' == "${str:j:2}" ]]; then
@@ -176,6 +178,8 @@ _split_cmd_line() {
                 sta+=( '"' )
             elif [[ "'" == "${str:j:1}" ]]; then
                 sta+=( "'" )
+            elif [[ '\ ' == "${str:j:2}" ]]; then
+                (( j++ ))
             elif [[ '\$' == "${str:j:2}" ]]; then
                 (( j++ ))
             elif [[ '\`' == "${str:j:2}" ]]; then
@@ -203,6 +207,8 @@ _split_cmd_line() {
                 sta+=( '"' )
             elif [[ "'" == "${str:j:1}" ]]; then
                 sta+=( "'" )
+            elif [[ '\ ' == "${str:j:2}" ]]; then
+                (( j++ ))
             elif [[ '\$' == "${str:j:2}" ]]; then
                 (( j++ ))
             elif [[ '\`' == "${str:j:2}" ]]; then
@@ -228,6 +234,8 @@ _split_cmd_line() {
                 sta+=( '"' )
             elif [[ "'" == "${str:j:1}" ]]; then
                 sta+=( "'" )
+            elif [[ '\ ' == "${str:j:2}" ]]; then
+                (( j++ ))
             elif [[ '\$' == "${str:j:2}" ]]; then
                 (( j++ ))
             elif [[ '\`' == "${str:j:2}" ]]; then
