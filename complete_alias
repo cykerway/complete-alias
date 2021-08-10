@@ -65,7 +65,7 @@ __compal__debug() {
     echo
 }
 
-##  test whether element is in array;
+##  test whether an element is in array;
 ##
 ##  $@
 ##  :   ( elem arr[0] arr[1] ... )
