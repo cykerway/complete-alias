@@ -156,7 +156,7 @@ to complete alias `sctl` aliased to `systemctl`:
 
 The source code is licensed under the [GNU General Public License v3.0][GPLv3].
 
-Copyright (C) 2016-2018 Cyker Way
+Copyright (C) 2016-2021 Cyker Way
 
 This program is free software: you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free Software
