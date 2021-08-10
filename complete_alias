@@ -532,8 +532,8 @@ __compal__set_vanilla_completion_custom() {
 ##  this ensures vanilla completions of alias commands are fetched and saved
 ##  before they are overwritten by `complete -F _complete_alias`;
 __compal__save_vanilla_cspecs() {
-    ##  `complete -p` prints one command on each line; so we can loop;
-    while IFS= read -r line; do
+    ##  `complete -p` prints cspec for one command per line; so we can loop;
+    while IFS= read -r cspec; do
 
         ##  despite as described in `man bash`, `complete -p` does not always
         ##  print an existing completion in a way that can be reused as input;
@@ -573,31 +573,31 @@ __compal__save_vanilla_cspecs() {
         ##
         ##  so we must parse the `complete -p` result and run parsed result;
         ##
-        ##  using `_split_cmd_line` looks fine for a `complete -p` command line,
-        ##  because it has only one command without redirections or assignments,
-        ##  also without command substitutions, etc.; we should be able to rerun
-        ##  this command in an argv fashion (eg: `"${line_args[@]}"`);
-        __compal__split_cmd_line "$line"
-        local line_args=( "${__compal__retval[@]}" )
+        ##  using `_split_cmd_line` on a cspec looks fine, because it contains
+        ##  only one command without redirections or assignments, also without
+        ##  command substitutions, etc.; we should be able to rerun this cspec
+        ##  in an argv fashion (eg: `"${cspec_args[@]}"`);
+        __compal__split_cmd_line "$cspec"
+        local cspec_args=( "${__compal__retval[@]}" )
 
-        ##  ensure this is a completion command;
-        [[ "${line_args[0]}" == "complete" ]] || continue
+        ##  ensure this is indeed a cspec;
+        [[ "${cspec_args[0]}" == "complete" ]] || continue
 
-        ##  ignore `complete -D` completion command; such command is irrelevant
-        ##  because this script does not change the default completion;
-        ! __compal__inarr "-D" "${line_args[@]}" || continue
+        ##  ignore `complete -D` cspec; such is irrelevant because this script
+        ##  does not change the default completion;
+        ! __compal__inarr "-D" "${cspec_args[@]}" || continue
 
-        ##  ignore `complete -F _complete_alias` completion command; the reason
-        ##  is vanilla completions must be alias-free; although it is better to
-        ##  check with `$line_args`, string `-F _complete_alias` rarely appears
-        ##  in a command name; so we can check with `$line`;
-        [[ "$line" != *"-F _complete_alias"* ]] || continue
+        ##  ignore `complete -F _complete_alias` cspecs; the reason is, vanilla
+        ##  completions must be alias-free; although it is better to check with
+        ##  `$cspec_args`, string `-F _complete_alias` is very unlikely part of
+        ##  a command name; so we just check with `$cspec`, which is easier;
+        [[ "$cspec" != *"-F _complete_alias"* ]] || continue
 
-        ##  get the command being completed by this line;
-        local line_cmd="${line_args[-1]}"
+        ##  get the command being completed by this cspec;
+        local cspec_cmd="${cspec_args[-1]}"
 
         ##  save this vanilla completion into `_vanilla_cspecs`;
-        __compal__vanilla_cspecs["$line_cmd"]="$line"
+        __compal__vanilla_cspecs["$cspec_cmd"]="$cspec"
 
     done < <(complete -p)
 }
