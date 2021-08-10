@@ -463,7 +463,12 @@ __compal__expand_alias() {
     fi
 }
 
-##  set completion function of an alias command to the vanilla one;
+##  set completion function of an alias command to the vanilla one; whenever we
+##  call this function, we expect the current completion function for the input
+##  command is `_complete_alias`; that is to say, we expect at the beginning of
+##  this function:
+##
+##      [[ "$(complete -p "$cmd")" == *"-F _complete_alias"* ]]
 ##
 ##  $1
 ##  :   alias command;
@@ -484,10 +489,13 @@ __compal__set_vanilla_completion() {
         ##  run parsed completion command;
         "${cspec_args[@]}"
     else
-        ##  no vanilla cspec for this command is found; fallback to completion
-        ##  function `_completion_loader` which is largely an ensemble of many
-        ##  completion functions;
-        _completion_loader "$cmd"
+        ##  no vanilla cspec for this command is found; we remove the current
+        ##  cspec for this command (which should be `_complete_alias`), which
+        ##  effectively uses the default cspec (ie: `complete -D`) to process
+        ##  this command; we do not fallback to `_completion_loader`, because
+        ##  the default cspec could be something else, and here we want to be
+        ##  consistent;
+        complete -r "$cmd"
     fi
 }
 
