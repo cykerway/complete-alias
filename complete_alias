@@ -470,31 +470,25 @@ __compal__expand_alias() {
 __compal__set_vanilla_completion() {
     local cmd="$1"
 
-    ##  search `_vanilla_cspecs` for a completion function of this command;
-    for _cmd in "${!__compal__vanilla_cspecs[@]}"; do
-        if [[ "$_cmd" == "$cmd" ]]; then
-            ##  load vanilla completion of this command;
-            local line="${__compal__vanilla_cspecs[$_cmd]}"
+    ##  load vanilla completion of this command;
+    local cspec="${__compal__vanilla_cspecs[$cmd]}"
 
-            ##  due to some issues with `complete -p`, it is not ok to eval its
-            ##  output directly; instead, we can parse its output and run it in
-            ##  an argv fashion; `_split_cmd_line` looks good for this job; see
-            ##  other comments for details;
-            __compal__split_cmd_line "$line"
-            local line_args=( "${__compal__retval[@]}" )
+    if [[ -n "$cspec" ]]; then
+        ##  a vanilla cspec for this command is found; due to some issues with
+        ##  `complete -p` we cannot eval this cspec directly; instead, we need
+        ##  to parse it and run it in an argv fashion; `_split_cmd_line` looks
+        ##  good for this job; see other comments for details;
+        __compal__split_cmd_line "$cspec"
+        local cspec_args=( "${__compal__retval[@]}" )
 
-            ##  run parsed completion command;
-            "${line_args[@]}"
-
-            ##  we are done here; so return;
-            return
-        fi
-    done
-
-    ##  if a specific vanilla completion of this command is not found, fallback
-    ##  to the knowledgeable completion function `_completion_loader`, which is
-    ##  basically an ensemble of many completion functions;
-    _completion_loader "$cmd"
+        ##  run parsed completion command;
+        "${cspec_args[@]}"
+    else
+        ##  no vanilla cspec for this command is found; fallback to completion
+        ##  function `_completion_loader` which is largely an ensemble of many
+        ##  completion functions;
+        _completion_loader "$cmd"
+    fi
 }
 
 ##  this function works in the same way as `_set_vanilla_completion`, but runs
