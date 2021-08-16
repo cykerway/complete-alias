@@ -33,7 +33,7 @@
 
 ##  bool: true iff auto unmask alias commands; set it to false if auto unmask
 ##  feels too slow, or custom unmask is necessary to make an unusual behavior;
-COMPAL_AUTO_UNMASK="${COMPAL_AUTO_UNMASK:-1}"
+COMPAL_AUTO_UNMASK="${COMPAL_AUTO_UNMASK:-0}"
 
 ##  ============================================================================
 ##  # variables
