@@ -587,16 +587,20 @@ __compal__unmask_alias_manual() {
     esac
 }
 
-##  set completion function of an alias command to the vanilla one; whenever we
-##  call this function, we expect the current completion function for the input
-##  command is `_complete_alias`; that is to say, we expect at the beginning of
-##  this function:
-##
-##      [[ "$(complete -p "$cmd")" == *"-F _complete_alias"* ]]
+##  set completion function of an alias command to the vanilla one;
 ##
 ##  $1
 ##  :   alias command;
 __compal__unmask_alias() {
+    local cmd="$1"
+
+    ##  ensure current completion function of this command is `_complete_alias`;
+    if [[ "$(complete -p "$cmd")" != *"-F _complete_alias"* ]]; then
+        __compal__error "cannot unmask alias command: $cmd"
+        return
+    fi
+
+    ##  decide which unmask function to call;
     if (( "$COMPAL_AUTO_UNMASK" == 1 )); then
         __compal__unmask_alias_auto "$@"
     else
