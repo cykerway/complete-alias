@@ -670,6 +670,9 @@ __compal__delegate_in_context() {
 ##  save vanilla completions; run this function when this script is sourced;
 ##  this ensures vanilla completions of alias commands are fetched and saved
 ##  before they are overwritten by `complete -F _complete_alias`;
+##
+##  running this function on source is mandatory only when using auto unmask;
+##  when using manual unmask, it is safe to skip this function on source;
 __compal__save_vanilla_cspecs() {
     ##  `complete -p` prints cspec for one command per line; so we can loop;
     while IFS= read -r cspec; do
@@ -851,8 +854,12 @@ _complete_alias() {
 
 ##  main function;
 __compal__main() {
-    ##  save vanilla completions;
-    __compal__save_vanilla_cspecs
+    local compal_auto_unmask="${COMPAL_AUTO_UNMASK:-$__COMPAL_AUTO_UNMASK}"
+
+    if (( "$compal_auto_unmask" == 1 )); then
+        ##  save vanilla completions;
+        __compal__save_vanilla_cspecs
+    fi
 }
 
 ##  ============================================================================
