@@ -482,7 +482,7 @@ __compal__expand_alias() {
 ##
 ##  $1
 ##  :   alias command;
-__compal__set_vanilla_completion_auto() {
+__compal__unmask_alias_auto() {
     local cmd="$1"
 
     ##  load vanilla completion of this command;
@@ -515,7 +515,7 @@ __compal__set_vanilla_completion_auto() {
 ##
 ##  $1
 ##  :   alias command;
-__compal__set_vanilla_completion_manual() {
+__compal__unmask_alias_manual() {
     local cmd="$1"
 
     ##  uncomment and edit these lines to customize vanilla completions;
@@ -547,12 +547,51 @@ __compal__set_vanilla_completion_manual() {
 ##
 ##  $1
 ##  :   alias command;
-__compal__set_vanilla_completion() {
+__compal__unmask_alias() {
     if (( "${COMPAL_AUTO_MASK:-$__COMPAL_AUTO_MASK}" == 1 )); then
-        __compal__set_vanilla_completion_auto "$@"
+        __compal__unmask_alias_auto "$@"
     else
-        __compal__set_vanilla_completion_manual "$@"
+        __compal__unmask_alias_manual "$@"
     fi
+}
+
+##  set completion function of an alias command to `_complete_alias`;
+##
+##  $1
+##  :   alias command;
+__compal__mask_alias() {
+    local cmd="$1"
+
+    complete -F _complete_alias "$cmd"
+}
+
+##  delegate completion to `bash-completion`;
+__compal__delegate() {
+    _command_offset 0
+}
+
+##  delegate completion to `bash-completion`, within a transient context in
+##  which the input alias command is masked;
+##
+##  $1
+##  :   alias command to be masked;
+__compal__mask_and_delegate() {
+    local cmd="$1"
+
+    ##  since aliases have been fully expanded, we no longer need to consider
+    ##  aliases in the resulting command line; thus we now set the completion
+    ##  function for this alias to the vanilla one, which is alias-free; this
+    ##  avoids an infinite recursion when a command is aliased to itself (ie:
+    ##  `alias ls='ls -a'`);
+    __compal__unmask_alias "$cmd"
+
+    ##  do actual completion; `_command_offset` is a meta-command completion
+    ##  function provided by `bash-completion`; it is not guaranteed to work
+    ##  with argument `0`, but looking at its code (version 2.11) it should;
+    __compal__delegate
+
+    ##  reset this command completion function to `_complete_alias`;
+    __compal__mask_alias "$cmd"
 }
 
 ##  save vanilla completions; run this function when this script is sourced;
@@ -650,10 +689,8 @@ __compal__complete_non_alias() {
     local compcmd="${cmd##*/}"
 
     if alias "$compcmd" &>/dev/null; then
-        ##  if command basename is an alias, handle it and complete;
-        __compal__set_vanilla_completion "$compcmd"
-        _command_offset 0
-        complete -F _complete_alias "$compcmd"
+        ##  if command basename is an alias, mask and delegate;
+        __compal__mask_and_delegate "$compcmd"
     else
         ##  else, this indicates an error;
         __compal__error "command is not an alias: $cmd"
@@ -708,20 +745,8 @@ __compal__complete_alias() {
     ##  increase refcnt;
     (( __compal__refcnt++ ))
 
-    ##  since aliases have been fully expanded, we no longer need to consider
-    ##  aliases in the resulting command line; thus we now set the completion
-    ##  function for this alias to the vanilla one, which is alias-free; this
-    ##  avoids an infinite recursion when a command is aliased to itself (ie:
-    ##  `alias ls='ls -a'`);
-    __compal__set_vanilla_completion "$cmd"
-
-    ##  do actual completion; `_command_offset` is a meta-command completion
-    ##  function provided by `bash-completion`; it is not guaranteed to work
-    ##  with argument `0`, but looking at its code (version 2.11) it should;
-    _command_offset 0
-
-    ##  reset this command completion function to `_complete_alias`;
-    complete -F _complete_alias "$cmd"
+    ##  mask and delegate;
+    __compal__mask_and_delegate "$cmd"
 
     ##  decrease refcnt;
     (( __compal__refcnt-- ))
