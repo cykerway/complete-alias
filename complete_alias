@@ -631,6 +631,9 @@ __compal__delegate() {
 ##  delegate completion to `bash-completion`, within a transient context in
 ##  which the input alias command is unmasked;
 ##
+##  this function expects current completion function of this command to be
+##  `_complete_alias`;
+##
 ##  $1
 ##  :   alias command to be unmasked;
 __compal__delegate_in_context() {
@@ -765,9 +768,27 @@ __compal__complete_alias() {
     local cmd="${COMP_WORDS[0]}"
 
     ##  we expand aliases only for the original command line (ie: the command
-    ##  line after which user pressed `<tab>`); this means we expand aliases
-    ##  only in the outmost call of this function; we ensure this by using a
-    ##  refcnt and expand aliases iff the refcnt is equal to 0;
+    ##  line on which user pressed `<tab>`); unfortunately, we may not have a
+    ##  chance to see the original command line, and we have no way to ensure
+    ##  that; we take an approximation: we expand aliases only in the outmost
+    ##  call of this function, which implies only on the first occasion of an
+    ##  alias command; we can ensure this condition using a refcnt and expand
+    ##  aliases iff the refcnt is equal to 0; this approximation always works
+    ##  correctly when the 1st word on the original command line is an alias;
+    ##
+    ##  this approximation may fail when the 1st word on the original command
+    ##  line is not an alias; an example that expects files but gets ip addrs:
+    ##
+    ##      $ unalias sudo
+    ##      $ complete -r sudo
+    ##      $ alias ls='ping'
+    ##      $ complete -F _complete_alias ls
+    ##      $ sudo ls <tab>
+    ##      {ip}
+    ##      {ip}
+    ##      {ip}
+    ##      ...
+    ##
     if (( __compal__refcnt == 0 )); then
 
         ##  find index range of word `$COMP_WORDS[$COMP_CWORD]` in string
