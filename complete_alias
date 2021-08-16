@@ -51,7 +51,7 @@ __compal__refcnt=0
 ##  order is to init this array when this script is sourced; the sourcing will
 ##  happen before `complete -F _complete_alias ...` for obvious reasons;
 ##
-##  the content of this array depends on user configurations; an example:
+##  the content of this array depends on user configuration; an example:
 ##
 ##      _vanilla_cspecs["tee"]="complete -F _longopt tee"
 ##      _vanilla_cspecs["type"]="complete -c type"
@@ -503,8 +503,14 @@ __compal__unmask_alias_auto() {
         __compal__split_cmd_line "$cspec"
         local cspec_args=( "${__compal__retval[@]}" )
 
-        ##  run parsed completion command;
-        "${cspec_args[@]}"
+        ##  ensure this is indeed a cspec;
+        if [[ "${cspec_args[0]}" == "complete" ]]; then
+            ##  run parsed completion command;
+            "${cspec_args[@]}"
+        else
+            __compal__error "not a complete command"
+        fi
+
     else
         ##  no vanilla cspec for this command is found; we remove the current
         ##  cspec for this command (which should be `_complete_alias`), which
@@ -625,6 +631,9 @@ __compal__remask_alias() {
 
 ##  delegate completion to `bash-completion`;
 __compal__delegate() {
+    ##  `_command_offset` is a meta-command completion function provided by
+    ##  `bash-completion`; the documentation does not say it will work with
+    ##  argument `0`, but looking at its code (version 2.11) it should;
     _command_offset 0
 }
 
