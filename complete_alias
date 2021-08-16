@@ -644,7 +644,7 @@ __compal__delegate() {
 }
 
 ##  delegate completion to `bash-completion`, within a transient context in
-##  which the input alias command is masked;
+##  which the input alias command is unmasked;
 ##
 ##  $1
 ##  :   alias command to be masked;
