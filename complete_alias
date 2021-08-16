@@ -22,35 +22,18 @@
 ##  ============================================================================
 
 ##  ============================================================================
-##  # (normal) environment variables
+##  # environment variables
 ##
 ##  these are envars read by this script; users are advised to set these envars
 ##  before sourcing this script to customize its behavior, even though some may
 ##  still work if set after sourcing this script; these envar names must follow
 ##  this naming convention: all letters uppercase, no leading underscore, words
 ##  separated by one underscore;
-##
-##  commented envars are listed here only for reference; do not uncomment them,
-##  because this script should not overwrite user configuration;
 ##  ============================================================================
 
 ##  bool: true iff auto unmask alias commands; set it to false if auto unmask
 ##  feels too slow, or custom unmask is necessary to make an unusual behavior;
-#COMPAL_AUTO_UNMASK=1
-
-##  ============================================================================
-##  # default environment variables
-##
-##  these envars contain default values for normal envars; all of these default
-##  envar names begin with double underscores; for example, `COMPAL_AUTO_UNMASK`
-##  defaults to `__COMPAL_AUTO_UNMASK`; this naming allows easy mapping between
-##  an envar and its default value;
-##
-##  users shall not change default envars, but are free to define normal envars
-##  (ie: without double underscores) as listed above, to customize this script;
-##  ============================================================================
-
-__COMPAL_AUTO_UNMASK=1
+COMPAL_AUTO_UNMASK="${COMPAL_AUTO_UNMASK:-1}"
 
 ##  ============================================================================
 ##  # variables
@@ -614,9 +597,7 @@ __compal__unmask_alias_manual() {
 ##  $1
 ##  :   alias command;
 __compal__unmask_alias() {
-    local compal_auto_unmask="${COMPAL_AUTO_UNMASK:-$__COMPAL_AUTO_UNMASK}"
-
-    if (( "$compal_auto_unmask" == 1 )); then
+    if (( "$COMPAL_AUTO_UNMASK" == 1 )); then
         __compal__unmask_alias_auto "$@"
     else
         __compal__unmask_alias_manual "$@"
@@ -854,9 +835,7 @@ _complete_alias() {
 
 ##  main function;
 __compal__main() {
-    local compal_auto_unmask="${COMPAL_AUTO_UNMASK:-$__COMPAL_AUTO_UNMASK}"
-
-    if (( "$compal_auto_unmask" == 1 )); then
+    if (( "$COMPAL_AUTO_UNMASK" == 1 )); then
         ##  save vanilla completions;
         __compal__save_vanilla_cspecs
     fi
