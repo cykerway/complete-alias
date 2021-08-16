@@ -632,23 +632,17 @@ __compal__delegate() {
 ##  which the input alias command is unmasked;
 ##
 ##  $1
-##  :   alias command to be masked;
+##  :   alias command to be unmasked;
 __compal__delegate_in_context() {
     local cmd="$1"
 
-    ##  since aliases have been fully expanded, we no longer need to consider
-    ##  aliases in the resulting command line; thus we now set the completion
-    ##  function for this alias to the vanilla one, which is alias-free; this
-    ##  avoids an infinite recursion when a command is aliased to itself (ie:
-    ##  `alias ls='ls -a'`);
+    ##  unmask alias:
     __compal__unmask_alias "$cmd"
 
-    ##  do actual completion; `_command_offset` is a meta-command completion
-    ##  function provided by `bash-completion`; it is not guaranteed to work
-    ##  with argument `0`, but looking at its code (version 2.11) it should;
+    ##  do actual completion;
     __compal__delegate
 
-    ##  reset this command completion function to `_complete_alias`;
+    ##  remask alias:
     __compal__remask_alias "$cmd"
 }
 
@@ -806,7 +800,26 @@ __compal__complete_alias() {
     ##  increase refcnt;
     (( __compal__refcnt++ ))
 
-    ##  delegate completion;
+    ##  delegate completion in context; this actually contains several steps:
+    ##
+    ##  -   unmask alias:
+    ##
+    ##      since aliases have been fully expanded, no need to consider aliases
+    ##      in the resulting command line; therefore, we now set the completion
+    ##      function for this alias to the vanilla, alias-free one; this avoids
+    ##      infinite recursion when using self-aliases (eg: `alias ls='ls -a'`);
+    ##
+    ##  -   do actual completion:
+    ##
+    ##      `_command_offset` is a meta-command completion function provided by
+    ##      `bash-completion`; the documentation does not say it will work with
+    ##      argument `0`, but looking at its code (version 2.11) it should;
+    ##
+    ##  -   remask alias:
+    ##
+    ##      reset this command completion function to `_complete_alias`;
+    ##
+    ##  these steps are put into one function `_delegate_in_context`;
     __compal__delegate_in_context "$cmd"
 
     ##  decrease refcnt;
