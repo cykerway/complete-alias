@@ -36,7 +36,7 @@
 
 ##  bool: true iff auto unmask alias commands; set it to false if auto unmask
 ##  feels too slow, or custom unmask is necessary to make an unusual behavior;
-#COMPAL_AUTO_UNMASK=
+#COMPAL_AUTO_UNMASK=1
 
 ##  ============================================================================
 ##  # default environment variables
@@ -502,7 +502,7 @@ __compal__expand_alias() {
     fi
 }
 
-##  set completion function of an alias command to the vanilla one (auto);
+##  the "auto" implementation of `_unmask_alias`;
 ##
 ##  $1
 ##  :   alias command;
@@ -533,16 +533,16 @@ __compal__unmask_alias_auto() {
     fi
 }
 
-##  set completion function of an alias command to the vanilla one (manual);
-##  edit this function to customize vanilla completions; this function does
-##  nothing by default;
+##  the "manual" implementation of `_unmask_alias`;
+##
+##  users should edit this function to customize vanilla command completions;
 ##
 ##  $1
 ##  :   alias command;
 __compal__unmask_alias_manual() {
     local cmd="$1"
 
-    ##  uncomment and edit these lines to customize vanilla completions;
+    ##  uncomment and edit these lines to customize vanilla command completions;
 #    case "$cmd" in
 #        command|type|which)
 #            complete -c "$cmd"
@@ -572,7 +572,9 @@ __compal__unmask_alias_manual() {
 ##  $1
 ##  :   alias command;
 __compal__unmask_alias() {
-    if (( "${COMPAL_AUTO_UNMASK:-$__COMPAL_AUTO_UNMASK}" == 1 )); then
+    local compal_auto_unmask="${COMPAL_AUTO_UNMASK:-$__COMPAL_AUTO_UNMASK}"
+
+    if (( "$compal_auto_unmask" == 1 )); then
         __compal__unmask_alias_auto "$@"
     else
         __compal__unmask_alias_manual "$@"
