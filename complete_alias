@@ -602,9 +602,13 @@ __compal__save_vanilla_cspecs() {
     done < <(complete -p)
 }
 
-##  programmable completion function for aliases; this is the function to be set
-##  with `complete -F`;
-_complete_alias() {
+##  completion function for non-aliases;
+__compal__complete_non_alias() {
+    echo "error: not an alias" >&2
+}
+
+##  completion function for aliases;
+__compal__complete_alias() {
     ##  get alias command;
     local cmd="${COMP_WORDS[0]}"
 
@@ -665,6 +669,20 @@ _complete_alias() {
 
     ##  decrease refcnt;
     (( __compal__refcnt-- ))
+}
+
+##  this is the function to be set with `complete -F`; this function can handle
+##  both alias and non-alias commands;
+_complete_alias() {
+    ##  get command;
+    local cmd="${COMP_WORDS[0]}"
+
+    ##  complete command;
+    if ! alias "$cmd" &>/dev/null; then
+        __compal__complete_non_alias
+    else
+        __compal__complete_alias
+    fi
 }
 
 ##  main function;
