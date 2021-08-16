@@ -575,7 +575,7 @@ __compal__delegate() {
 ##
 ##  $1
 ##  :   alias command to be masked;
-__compal__mask_and_delegate() {
+__compal__delegate_in_context() {
     local cmd="$1"
 
     ##  since aliases have been fully expanded, we no longer need to consider
@@ -689,8 +689,8 @@ __compal__complete_non_alias() {
     local compcmd="${cmd##*/}"
 
     if alias "$compcmd" &>/dev/null; then
-        ##  if command basename is an alias, mask and delegate;
-        __compal__mask_and_delegate "$compcmd"
+        ##  if command basename is an alias, delegate completion;
+        __compal__delegate_in_context "$compcmd"
     else
         ##  else, this indicates an error;
         __compal__error "command is not an alias: $cmd"
@@ -745,8 +745,8 @@ __compal__complete_alias() {
     ##  increase refcnt;
     (( __compal__refcnt++ ))
 
-    ##  mask and delegate;
-    __compal__mask_and_delegate "$cmd"
+    ##  delegate completion;
+    __compal__delegate_in_context "$cmd"
 
     ##  decrease refcnt;
     (( __compal__refcnt-- ))
