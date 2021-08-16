@@ -542,24 +542,66 @@ __compal__unmask_alias_auto() {
 __compal__unmask_alias_manual() {
     local cmd="$1"
 
-    ##  uncomment and edit these lines to customize vanilla command completions;
-#    case "$cmd" in
-#        command|type|which)
-#            complete -c "$cmd"
-#            ;;
-#        groups|slay|w|sux)
-#            complete -u "$cmd"
-#            ;;
-#        fakeroot|gksu|gksudo|kdesudo|really)
-#            complete -F _root_command "$cmd"
-#            ;;
-#        a2ps|awk|base64|bash|bc|bison)
-#            complete -F _longopt "$cmd"
-#            ;;
-#        *)
-#            _completion_loader "$cmd"
-#            ;;
-#    esac
+    case "$cmd" in
+        bind)
+            complete -A binding "$cmd"
+            ;;
+        help)
+            complete -A helptopic "$cmd"
+            ;;
+        set)
+            complete -A setopt "$cmd"
+            ;;
+        shopt)
+            complete -A shopt "$cmd"
+            ;;
+        bg)
+            complete -A stopped -P '"%' -S '"' "$cmd"
+            ;;
+        service)
+            complete -F _service "$cmd"
+            ;;
+        unalias)
+            complete -a "$cmd"
+            ;;
+        builtin)
+            complete -b "$cmd"
+            ;;
+        command|type|which)
+            complete -c "$cmd"
+            ;;
+        fg|jobs|disown)
+            complete -j -P '"%' -S '"' "$cmd"
+            ;;
+        groups|slay|w|sux)
+            complete -u "$cmd"
+            ;;
+        readonly|unset)
+            complete -v "$cmd"
+            ;;
+        traceroute|traceroute6|tracepath|tracepath6|fping|fping6|telnet|rsh|\
+            rlogin|ftp|dig|mtr|ssh-installkeys|showmount)
+            complete -F _known_hosts "$cmd"
+            ;;
+        aoss|command|do|else|eval|exec|ltrace|nice|nohup|padsp|then|time|\
+            tsocks|vsound|xargs)
+            complete -F _command "$cmd"
+            ;;
+        fakeroot|gksu|gksudo|kdesudo|really)
+            complete -F _root_command "$cmd"
+            ;;
+        a2ps|awk|base64|bash|bc|bison|cat|chroot|colordiff|cp|csplit|cut|date|\
+            df|diff|dir|du|enscript|env|expand|fmt|fold|gperf|grep|grub|head|\
+            irb|ld|ldd|less|ln|ls|m4|md5sum|mkdir|mkfifo|mknod|mv|netstat|nl|\
+            nm|objcopy|objdump|od|paste|pr|ptx|readelf|rm|rmdir|sed|seq|\
+            sha{,1,224,256,384,512}sum|shar|sort|split|strip|sum|tac|tail|tee|\
+            texindex|touch|tr|uname|unexpand|uniq|units|vdir|wc|who)
+            complete -F _longopt "$cmd"
+            ;;
+        *)
+            _completion_loader "$cmd"
+            ;;
+    esac
 }
 
 ##  set completion function of an alias command to the vanilla one; whenever we
