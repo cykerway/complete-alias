@@ -25,8 +25,8 @@
 ##  default environment variable;
 ##  ============================================================================
 
-##  bool: true iff auto mask alias commands;
-__COMPAL_AUTO_MASK=1
+##  bool: true iff auto unmask alias commands;
+__COMPAL_AUTO_UNMASK=1
 
 ##  ============================================================================
 ##  variable;
@@ -548,7 +548,7 @@ __compal__unmask_alias_manual() {
 ##  $1
 ##  :   alias command;
 __compal__unmask_alias() {
-    if (( "${COMPAL_AUTO_MASK:-$__COMPAL_AUTO_MASK}" == 1 )); then
+    if (( "${COMPAL_AUTO_UNMASK:-$__COMPAL_AUTO_UNMASK}" == 1 )); then
         __compal__unmask_alias_auto "$@"
     else
         __compal__unmask_alias_manual "$@"
@@ -559,7 +559,7 @@ __compal__unmask_alias() {
 ##
 ##  $1
 ##  :   alias command;
-__compal__mask_alias() {
+__compal__remask_alias() {
     local cmd="$1"
 
     complete -F _complete_alias "$cmd"
@@ -591,7 +591,7 @@ __compal__delegate_in_context() {
     __compal__delegate
 
     ##  reset this command completion function to `_complete_alias`;
-    __compal__mask_alias "$cmd"
+    __compal__remask_alias "$cmd"
 }
 
 ##  save vanilla completions; run this function when this script is sourced;
