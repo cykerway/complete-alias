@@ -65,6 +65,14 @@ __compal__debug() {
     echo
 }
 
+##  print an error message;
+##
+##  $1
+##  :   error message;
+__compal__error() {
+    printf "error: %s\n" "$1" >&2
+}
+
 ##  test whether an element is in array;
 ##
 ##  $@
