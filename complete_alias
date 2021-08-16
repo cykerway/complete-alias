@@ -579,7 +579,12 @@ __compal__unmask_alias() {
     fi
 }
 
-##  set completion function of an alias command to `_complete_alias`;
+##  set completion function of an alias command to `_complete_alias`; doing so
+##  overwrites the original completion function for this command, if any; this
+##  makes `_complete_alias` look like a "mask" on the alias command; then, why
+##  is this function called a "remask"? because this function is always called
+##  in pair with (and after) a corresponding "unmask" function; the 1st "mask"
+##  happens when user directly runs `complete -F _complete_alias ...`;
 ##
 ##  $1
 ##  :   alias command;
