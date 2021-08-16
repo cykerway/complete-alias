@@ -152,6 +152,56 @@ to complete alias `sctl` aliased to `systemctl`:
         ...
         complete -F _complete_alias "${!BASH_ALIASES[@]}"
 
+-   `sudo` completion is not working correctly?
+
+    there is a known case with `sudo` that can go wrong; for example:
+
+        $ unalias sudo
+        $ complete -r sudo
+        $ alias ls='ping'
+        $ complete -F _complete_alias ls
+        $ sudo ls <tab>
+        {ip}
+        {ip}
+        {ip}
+        ...
+
+    here we are expecting a list of files, but the completion reply is a list of
+    ip addrs; the reason is, the completion function for `sudo` is almost always
+    `_sudo`, which is provided by `bash-completion`; this function strips `sudo`
+    then meta-completes the remaining command line; in our case, this is `ls` to
+    be completed by `_complete_alias`; but there is no way for `_complete_alias`
+    to see the original command line, and so it cannot tell `ls` from `sudo ls`;
+    as a result, `ls` and `sudo ls` are always completed the same even when they
+    should not; unfortunately, there is nothing `_complete_alias` can do here;
+
+    the easiest solution is to make `sudo` a self-alias:
+
+        $ alias sudo='sudo'
+        $ complete -F _complete_alias sudo
+        $ alias ls='ping'
+        $ complete -F _complete_alias ls
+        $ sudo ls <tab>
+        {file}
+        {file}
+        {file}
+        ...
+
+    this gives `_complete_alias` a chance to see the original command line, then
+    decide what is the right thing to do; you may add a trailing space to `sudo`
+    alias body if you like it that way, and things still work correctly (listing
+    ip addrs is correct in this case):
+
+        $ alias sudo='sudo '
+        $ complete -F _complete_alias sudo
+        $ alias ls='ping'
+        $ complete -F _complete_alias ls
+        $ sudo ls <tab>
+        {ip}
+        {ip}
+        {ip}
+        ...
+
 ## license
 
 The source code is licensed under the [GNU General Public License v3.0][GPLv3].
