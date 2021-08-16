@@ -22,6 +22,13 @@
 ##  ============================================================================
 
 ##  ============================================================================
+##  default environment variable;
+##  ============================================================================
+
+##  bool: true iff auto mask alias commands;
+__COMPAL_AUTO_MASK=1
+
+##  ============================================================================
 ##  variable;
 ##  ============================================================================
 
@@ -471,16 +478,11 @@ __compal__expand_alias() {
     fi
 }
 
-##  set completion function of an alias command to the vanilla one; whenever we
-##  call this function, we expect the current completion function for the input
-##  command is `_complete_alias`; that is to say, we expect at the beginning of
-##  this function:
-##
-##      [[ "$(complete -p "$cmd")" == *"-F _complete_alias"* ]]
+##  set completion function of an alias command to the vanilla one (auto);
 ##
 ##  $1
 ##  :   alias command;
-__compal__set_vanilla_completion() {
+__compal__set_vanilla_completion_auto() {
     local cmd="$1"
 
     ##  load vanilla completion of this command;
@@ -507,13 +509,13 @@ __compal__set_vanilla_completion() {
     fi
 }
 
-##  this function works in the same way as `_set_vanilla_completion`, but runs
-##  at a later time and so takes higher precedence; you can edit this function
-##  to customize vanilla completions; this function does nothing by default;
+##  set completion function of an alias command to the vanilla one (manual);
+##  edit this function to customize vanilla completions; this function does
+##  nothing by default;
 ##
 ##  $1
 ##  :   alias command;
-__compal__set_vanilla_completion_custom() {
+__compal__set_vanilla_completion_manual() {
     local cmd="$1"
 
     ##  uncomment and edit these lines to customize vanilla completions;
@@ -534,6 +536,23 @@ __compal__set_vanilla_completion_custom() {
 #            _completion_loader "$cmd"
 #            ;;
 #    esac
+}
+
+##  set completion function of an alias command to the vanilla one; whenever we
+##  call this function, we expect the current completion function for the input
+##  command is `_complete_alias`; that is to say, we expect at the beginning of
+##  this function:
+##
+##      [[ "$(complete -p "$cmd")" == *"-F _complete_alias"* ]]
+##
+##  $1
+##  :   alias command;
+__compal__set_vanilla_completion() {
+    if (( "${COMPAL_AUTO_MASK:-$__COMPAL_AUTO_MASK}" == 1 )); then
+        __compal__set_vanilla_completion_auto "$@"
+    else
+        __compal__set_vanilla_completion_manual "$@"
+    fi
 }
 
 ##  save vanilla completions; run this function when this script is sourced;
@@ -633,7 +652,6 @@ __compal__complete_non_alias() {
     if alias "$compcmd" &>/dev/null; then
         ##  if command basename is an alias, handle it and complete;
         __compal__set_vanilla_completion "$compcmd"
-        __compal__set_vanilla_completion_custom "$compcmd"
         _command_offset 0
         complete -F _complete_alias "$compcmd"
     else
@@ -695,11 +713,7 @@ __compal__complete_alias() {
     ##  function for this alias to the vanilla one, which is alias-free; this
     ##  avoids an infinite recursion when a command is aliased to itself (ie:
     ##  `alias ls='ls -a'`);
-    ##
-    ##  we use two functions for this job, in ascending precedence; they work
-    ##  together on setting the vanilla completion function for this command;
     __compal__set_vanilla_completion "$cmd"
-    __compal__set_vanilla_completion_custom "$cmd"
 
     ##  do actual completion; `_command_offset` is a meta-command completion
     ##  function provided by `bash-completion`; it is not guaranteed to work
