@@ -610,14 +610,48 @@ __compal__save_vanilla_cspecs() {
     done < <(complete -p)
 }
 
-##  completion function for non-aliases;
+##  completion function for non-alias commands; normally, the mere invocation of
+##  this function indicates an error of command completion configuration because
+##  we are invoking `_complete_alias` on a non-alias command; but there can be a
+##  special case: `_command_offset` will try with command basename when there is
+##  no completion for the command itself; an example is `sudo /bin/ls` when both
+##  `sudo` and `ls` are aliases; this function handles this special case;
+##
+##  $1
+##  :   the name of the command whose arguments are being completed;
+##  $2
+##  :   the word being completed;
+##  $3
+##  :   the word preceding the word being completed on the current command line;
 __compal__complete_non_alias() {
-    echo "error: not an alias" >&2
+    ##  get command name; must be non-alias;
+    local cmd="${COMP_WORDS[0]}"
+
+    ##  get command basename;
+    local compcmd="${cmd##*/}"
+
+    if alias "$compcmd" &>/dev/null; then
+        ##  if command basename is an alias, handle it and complete;
+        __compal__set_vanilla_completion "$compcmd"
+        __compal__set_vanilla_completion_custom "$compcmd"
+        _command_offset 0
+        complete -F _complete_alias "$compcmd"
+    else
+        ##  else, this indicates an error;
+        __compal__error "command is not an alias: $cmd"
+    fi
 }
 
-##  completion function for aliases;
+##  completion function for alias commands;
+##
+##  $1
+##  :   the name of the command whose arguments are being completed;
+##  $2
+##  :   the word being completed;
+##  $3
+##  :   the word preceding the word being completed on the current command line;
 __compal__complete_alias() {
-    ##  get alias command;
+    ##  get command name; must be alias;
     local cmd="${COMP_WORDS[0]}"
 
     ##  we expand aliases only for the original command line (ie: the command
@@ -679,17 +713,27 @@ __compal__complete_alias() {
     (( __compal__refcnt-- ))
 }
 
-##  this is the function to be set with `complete -F`; this function can handle
-##  both alias and non-alias commands;
+##  this is the function to be set with `complete -F`; this function expects
+##  alias commands, but can also handle non-alias commands in rare occasions;
+##
+##  as a standard completion function, this function can take 3 arguments as
+##  described in `man bash`; they are currently not being used, though;
+##
+##  $1
+##  :   the name of the command whose arguments are being completed;
+##  $2
+##  :   the word being completed;
+##  $3
+##  :   the word preceding the word being completed on the current command line;
 _complete_alias() {
     ##  get command;
     local cmd="${COMP_WORDS[0]}"
 
     ##  complete command;
     if ! alias "$cmd" &>/dev/null; then
-        __compal__complete_non_alias
+        __compal__complete_non_alias "$@"
     else
-        __compal__complete_alias
+        __compal__complete_alias "$@"
     fi
 }
 
