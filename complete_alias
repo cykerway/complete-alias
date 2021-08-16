@@ -508,7 +508,7 @@ __compal__unmask_alias_auto() {
             ##  run parsed completion command;
             "${cspec_args[@]}"
         else
-            __compal__error "not a complete command"
+            __compal__error "not a complete command: ${cspec_args[*]}"
         fi
 
     else
@@ -740,7 +740,7 @@ __compal__save_vanilla_cspecs() {
 ##  we are invoking `_complete_alias` on a non-alias command; but there can be a
 ##  special case: `_command_offset` will try with command basename when there is
 ##  no completion for the command itself; an example is `sudo /bin/ls` when both
-##  `sudo` and `ls` are aliases; this function handles this special case;
+##  `sudo` and `ls` are aliases; this function takes care of this special case;
 ##
 ##  $1
 ##  :   the name of the command whose arguments are being completed;
