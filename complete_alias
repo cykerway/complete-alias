@@ -100,6 +100,17 @@ __compal__inarr() {
 
 ##  split command line into words;
 ##
+##  this function shall give similar result as `bash` reference implementation:
+##
+##  -   git repo <https://git.savannah.gnu.org/cgit/bash.git>;
+##  -   commit `ce23728687ce9e584333367075c9deef413553fa`;
+##  -   function `pcomplete.c:command_line_to_word_list`;
+##  -   function `subst.c:split_at_delims`;
+##  -   function `subst.c:skip_to_delim`;
+##
+##  the `bash` reference implementation tells how bash splits command line into
+##  word list `COMP_WORDS`;
+##
 ##  warn: the output of this function is *not* a faithful split of the input;
 ##  this function drops redirections and assignments, and only keeps the last
 ##  command in the last pipeline;
