@@ -47,6 +47,10 @@ __compal__refcnt=0
 
 ##  an associative array of vanilla completions, keyed by command names;
 ##
+##  when we say this array stores "parsed" cspecs, we actually mean the cspecs
+##  have been parsed and indexed by command names in this array; cspec strings
+##  themselves have no difference between this array and `_raw_vanilla_cspecs`;
+##
 ##  example:
 ##
 ##      _vanilla_cspecs["tee"]="complete -F _longopt tee"
@@ -878,7 +882,7 @@ __compal__save_vanilla_cspecs() {
         ##  skip `-F _complete_alias` cspecs;
         [[ "$cspec" != *"-F _complete_alias"* ]] || continue
 
-        ##  now we have a vanilla cspec; save it in`_raw_vanilla_cspecs`;
+        ##  now we have a vanilla cspec; save it in `_raw_vanilla_cspecs`;
         __compal__raw_vanilla_cspecs["$cspec"]=""
 
     done < <(complete -p 2>/dev/null)
