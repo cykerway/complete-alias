@@ -213,23 +213,34 @@ __compal__split_cmd_line() {
                 (( j++ ))
             elif [[ "\'" == "${str:j:2}" ]]; then
                 (( j++ ))
+            elif [[ '&>' == "${str:j:2}" ]]; then
+                found_redass=1
+                (( j++ ))
+            elif [[ '>&' == "${str:j:2}" ]]; then
+                found_redass=1
+                (( j++ ))
+            elif [[ "><=" == *"${str:j:1}"* ]]; then
+                found_redass=1
             elif [[ '&&' == "${str:j:2}" ]]; then
                 words=()
+                check_redass=1
                 (( i = j + 2 ))
             elif [[ '||' == "${str:j:2}" ]]; then
                 words=()
+                check_redass=1
                 (( i = j + 2 ))
             elif [[ '&' == "${str:j:1}" ]]; then
                 words=()
+                check_redass=1
                 (( i = j + 1 ))
             elif [[ '|' == "${str:j:1}" ]]; then
                 words=()
+                check_redass=1
                 (( i = j + 1 ))
             elif [[ ';' == "${str:j:1}" ]]; then
                 words=()
+                check_redass=1
                 (( i = j + 1 ))
-            elif [[ "><=" == *"${str:j:1}"* ]]; then
-                found_redass=1
             fi
         elif [[ "${sta[-1]}" == ')' ]]; then
             if [[ ')' == "${str:j:1}" ]]; then
@@ -359,6 +370,45 @@ __compal__split_cmd_line() {
 
     ##  return value;
     __compal__retval=( "${words[@]}" )
+}
+
+##  debug `_split_cmd_line` for testing;
+##
+##  this function is very easy to use; just call it with a string argument in an
+##  interactive shell and look at the result; some interesting string arguments:
+##
+##  -   (fail) `&> /dev/null ping`
+##  -   (fail) `2> /dev/null ping`
+##  -   (fail) `2>&1 > /dev/null ping`
+##  -   (fail) `> /dev/null ping`
+##  -   (work) `&>/dev/null ping`
+##  -   (work) `2>&1 >/dev/null ping`
+##  -   (work) `2>/dev/null ping`
+##  -   (work) `>/dev/null ping`
+##  -   (work) `FOO=foo true && BAR=bar ping`
+##  -   (work) `echo & echo & ping`
+##  -   (work) `echo ; echo ; ping`
+##  -   (work) `echo | echo | ping`
+##  -   (work) `ping &> /dev/null`
+##  -   (work) `ping &>/dev/null`
+##  -   (work) `ping 2> /dev/null`
+##  -   (work) `ping 2>&1 > /dev/null`
+##  -   (work) `ping 2>&1 >/dev/null`
+##  -   (work) `ping 2>/dev/null`
+##  -   (work) `ping > /dev/null`
+##  -   (work) `ping >/dev/null`
+##
+##  $1
+##  :   command line string;
+__compal__debug_split_cmd_line() {
+    ##  command line string;
+    local str="$1"
+
+    __compal__split_cmd_line "$str"
+
+    for x in "${__compal__retval[@]}"; do
+        echo "'$x'"
+    done
 }
 
 ##  expand aliases in command line;
