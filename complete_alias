@@ -45,13 +45,9 @@ __compal__retval=
 ##  refcnt for alias expansion; expand aliases iff `_refcnt == 0`;
 __compal__refcnt=0
 
-##  an associative array of vanilla completions, keyed by command names; these
-##  completions are alias-free, and fetched before `_complete_alias` is set as
-##  the completion function for alias commands; the way we ensure this partial
-##  order is to init this array when this script is sourced; the sourcing will
-##  happen before `complete -F _complete_alias ...` for obvious reasons;
+##  an associative array of vanilla completions, keyed by command names;
 ##
-##  the content of this array depends on user configuration; an example:
+##  example:
 ##
 ##      _vanilla_cspecs["tee"]="complete -F _longopt tee"
 ##      _vanilla_cspecs["type"]="complete -c type"
@@ -60,16 +56,32 @@ __compal__refcnt=0
 ##
 declare -A __compal__vanilla_cspecs
 
-##  an indexed array of raw vanilla completions; these raw completions will be
+##  a set of raw vanilla completions, keyed by cspec; these raw cspecs will be
 ##  parsed and loaded into `_vanilla_cspecs` on use; we need this lazy loading
 ##  because parsing all cspecs on sourcing incurs a large performance overhead;
-declare -a __compal__raw_vanilla_cspecs
+##
+##  vanilla completions are alias-free and fetched before `_complete_alias` is
+##  set as the completion function for alias commands; the way we enforce this
+##  partial order is to init this array on source; the sourcing happens before
+##  `complete -F _complete_alias ...` for obvious reasons;
+##
+##  this is made a set, not an array, to avoid duplication when this script is
+##  sourced repeatedly; each sourcing overwrites previous ones on duplication;
+##
+##  example:
+##
+##      _raw_vanilla_cspecs["complete -F _longopt tee"]=""
+##      _raw_vanilla_cspecs["complete -c type"]=""
+##      _raw_vanilla_cspecs[""complete -a unalias"]=""
+##      ...
+##
+declare -A __compal__raw_vanilla_cspecs
 
 ##  ============================================================================
 ##  # functions
 ##  ============================================================================
 
-##  debug;
+##  debug bash programmable completion variables;
 __compal__debug() {
     echo
     echo "#COMP_WORDS=${#COMP_WORDS[@]}"
@@ -82,6 +94,74 @@ __compal__debug() {
     echo "COMP_LINE='${COMP_LINE}'"
     echo "COMP_POINT=${COMP_POINT}"
     echo
+}
+
+##  debug vanilla cspecs;
+##
+##  $1
+##  :   if "key" dump keys, else dump values;
+__compal__debug_vanilla_cspecs() {
+    if [[ "$1" == "key" ]]; then
+        for x in "${!__compal__vanilla_cspecs[@]}"; do
+            echo "$x"
+        done
+    else
+        for x in "${__compal__vanilla_cspecs[@]}"; do
+            echo "$x"
+        done
+    fi
+}
+
+##  debug raw vanilla cspecs;
+__compal__debug_raw_vanilla_cspecs() {
+    for x in "${!__compal__raw_vanilla_cspecs[@]}"; do
+        echo "$x"
+    done
+}
+
+##  debug `_split_cmd_line`;
+##
+##  this function is very easy to use; just call it with a string argument in an
+##  interactive shell and look at the result; some interesting string arguments:
+##
+##  -   (fail) `&> /dev/null ping`
+##  -   (fail) `2> /dev/null ping`
+##  -   (fail) `2>&1 > /dev/null ping`
+##  -   (fail) `> /dev/null ping`
+##  -   (work) `&>/dev/null ping`
+##  -   (work) `2>&1 >/dev/null ping`
+##  -   (work) `2>&1 ping`
+##  -   (work) `2>/dev/null ping`
+##  -   (work) `>/dev/null ping`
+##  -   (work) `FOO=foo true && BAR=bar ping`
+##  -   (work) `echo & echo & ping`
+##  -   (work) `echo ; echo ; ping`
+##  -   (work) `echo | echo | ping`
+##  -   (work) `ping &> /dev/null`
+##  -   (work) `ping &>/dev/null`
+##  -   (work) `ping 2> /dev/null`
+##  -   (work) `ping 2>&1 > /dev/null`
+##  -   (work) `ping 2>&1 >/dev/null`
+##  -   (work) `ping 2>&1`
+##  -   (work) `ping 2>/dev/null`
+##  -   (work) `ping > /dev/null`
+##  -   (work) `ping >/dev/null`
+##
+##  these failed examples are not an emergency because you can easily find their
+##  equivalents in those working ones; and we will check for emergency on failed
+##  examples added in the future;
+##
+##  $1
+##  :   command line string;
+__compal__debug_split_cmd_line() {
+    ##  command line string;
+    local str="$1"
+
+    __compal__split_cmd_line "$str"
+
+    for x in "${__compal__retval[@]}"; do
+        echo "'$x'"
+    done
 }
 
 ##  print an error message;
@@ -388,51 +468,6 @@ __compal__split_cmd_line() {
     __compal__retval=( "${words[@]}" )
 }
 
-##  debug `_split_cmd_line` for testing;
-##
-##  this function is very easy to use; just call it with a string argument in an
-##  interactive shell and look at the result; some interesting string arguments:
-##
-##  -   (fail) `&> /dev/null ping`
-##  -   (fail) `2> /dev/null ping`
-##  -   (fail) `2>&1 > /dev/null ping`
-##  -   (fail) `> /dev/null ping`
-##  -   (work) `&>/dev/null ping`
-##  -   (work) `2>&1 >/dev/null ping`
-##  -   (work) `2>&1 ping`
-##  -   (work) `2>/dev/null ping`
-##  -   (work) `>/dev/null ping`
-##  -   (work) `FOO=foo true && BAR=bar ping`
-##  -   (work) `echo & echo & ping`
-##  -   (work) `echo ; echo ; ping`
-##  -   (work) `echo | echo | ping`
-##  -   (work) `ping &> /dev/null`
-##  -   (work) `ping &>/dev/null`
-##  -   (work) `ping 2> /dev/null`
-##  -   (work) `ping 2>&1 > /dev/null`
-##  -   (work) `ping 2>&1 >/dev/null`
-##  -   (work) `ping 2>&1`
-##  -   (work) `ping 2>/dev/null`
-##  -   (work) `ping > /dev/null`
-##  -   (work) `ping >/dev/null`
-##
-##  these failed examples are not an emergency because you can easily find their
-##  equivalents in those working ones; we will check for emergency if new failed
-##  examples are added in the future;
-##
-##  $1
-##  :   command line string;
-__compal__debug_split_cmd_line() {
-    ##  command line string;
-    local str="$1"
-
-    __compal__split_cmd_line "$str"
-
-    for x in "${__compal__retval[@]}"; do
-        echo "'$x'"
-    done
-}
-
 ##  expand aliases in command line;
 ##
 ##  $1
@@ -574,7 +609,68 @@ __compal__expand_alias() {
     fi
 }
 
+##  run a cspec using its args in argv fashion;
+##
+##  despite as described in `man bash`, `complete -p` does not always print an
+##  existing completion in a way that can be reused as input; what complicates
+##  the matter here are quotes and escapes;
+##
+##  as an example, when `complete -p` prints:
+##
+##      $ complete -p
+##      complete -F _known_hosts "/tmp/aaa   bbb"
+##
+##  copy-paste running the above output gives wrong result:
+##
+##      $ complete -F _known_hosts "/tmp/aaa   bbb"
+##      $ complete -p
+##      complete -F _known_hosts /tmp/aaa   bbb
+##
+##  the correct command to give the same `complete -p` result is:
+##
+##      $ complete -F _known_hosts '"/tmp/aaa   bbb"'
+##      $ complete -p
+##      complete -F _known_hosts "/tmp/aaa   bbb"
+##
+##  to see another issue, this command gives a different result:
+##
+##      $ complete -F _known_hosts '/tmp/aaa\ \ \ bbb'
+##      $ complete -p
+##      complete -F _known_hosts /tmp/aaa\ \ \ bbb
+##
+##  note that these two `complete -p` results are *not* the same:
+##
+##      complete -F _known_hosts "/tmp/aaa   bbb"
+##      complete -F _known_hosts /tmp/aaa\ \ \ bbb
+##
+##  despite this is true:
+##
+##      [[ "/tmp/aaa   bbb" == /tmp/aaa\ \ \ bbb ]]
+##
+##  so we must parse the `complete -p` result and run parsed result;
+##
+##  using `_split_cmd_line` to parse a cspec should be ok, because a cspec has
+##  only one command without redirections or assignments, also without command
+##  substitutions, etc.; we can then rerun this cspec in an argv fashion using
+##  this function;
+##
+##  $@
+##  :   cspec args;
+__compal__run_cspec_args() {
+    local cspec_args=( "$@" )
+
+    ##  ensure this is indeed a cspec;
+    if [[ "${cspec_args[0]}" == "complete" ]]; then
+        ##  run parsed completion command;
+        "${cspec_args[@]}"
+    else
+        __compal__error "not a complete command: ${cspec_args[*]}"
+    fi
+}
+
 ##  the "auto" implementation of `_unmask_alias`;
+##
+##  this function is called only when using auto unmask;
 ##
 ##  $1
 ##  :   alias command;
@@ -587,20 +683,30 @@ __compal__unmask_alias_auto() {
     if [[ -n "$cspec" ]]; then
         ##  a vanilla cspec for this command is found; due to some issues with
         ##  `complete -p` we cannot eval this cspec directly; instead, we need
-        ##  to parse it and run it in an argv fashion; `_split_cmd_line` looks
-        ##  good for this job; see other comments for details;
+        ##  to parse and run it in argv fashion; see `_run_cspec_args` comment;
         __compal__split_cmd_line "$cspec"
         local cspec_args=( "${__compal__retval[@]}" )
-
-        ##  ensure this is indeed a cspec;
-        if [[ "${cspec_args[0]}" == "complete" ]]; then
-            ##  run parsed completion command;
-            "${cspec_args[@]}"
-        else
-            __compal__error "not a complete command: ${cspec_args[*]}"
-        fi
-
+        __compal__run_cspec_args "${cspec_args[@]}"
     else
+        ##  a (parsed) vanilla cspec for this command is not found; search raw
+        ##  vanilla cspecs for this command; if a matched raw vanilla cspec is
+        ##  found, then parse, save and run it; search is a loop because these
+        ##  raw cspecs are not parsed yet;
+        for _cspec in "${!__compal__raw_vanilla_cspecs[@]}"; do
+            if [[ "$_cspec" == *" $cmd" ]]; then
+                __compal__split_cmd_line "$_cspec"
+                local _cspec_args=( "${__compal__retval[@]}" )
+
+                ##  ensure this cspec has the correct command;
+                local _cspec_cmd="${_cspec_args[-1]}"
+                if [[ "$_cspec_cmd" == "$cmd" ]]; then
+                    __compal__vanilla_cspecs["$_cspec_cmd"]="$_cspec"
+                    __compal__run_cspec_args "${_cspec_args[@]}"
+                    return
+                fi
+            fi
+        done
+
         ##  no vanilla cspec for this command is found; we remove the current
         ##  cspec for this command (which should be `_complete_alias`), which
         ##  effectively uses the default cspec (ie: `complete -D`) to process
@@ -613,7 +719,9 @@ __compal__unmask_alias_auto() {
 
 ##  the "manual" implementation of `_unmask_alias`;
 ##
-##  users should edit this function to customize vanilla command completions;
+##  this function is called only when using manual unmask;
+##
+##  users may edit this function to customize vanilla command completions;
 ##
 ##  $1
 ##  :   alias command;
@@ -751,77 +859,28 @@ __compal__delegate_in_context() {
 ##  this ensures vanilla completions of alias commands are fetched and saved
 ##  before they are overwritten by `complete -F _complete_alias`;
 ##
+##  this function saves raw cspecs and does not parse them; for other useful
+##  comments about parsing and running cspecs see function `_run_cspec_args`;
+##
 ##  running this function on source is mandatory only when using auto unmask;
 ##  when using manual unmask, it is safe to skip this function on source;
 __compal__save_vanilla_cspecs() {
+    ##  get default cspec;
+    local def_cspec; def_cspec="$(complete -p -D 2>/dev/null)"
+
     ##  `complete -p` prints cspec for one command per line; so we can loop;
     while IFS= read -r cspec; do
 
-        ##  despite as described in `man bash`, `complete -p` does not always
-        ##  print an existing completion in a way that can be reused as input;
-        ##  what complicates the matter here are quotes and escapes;
-        ##
-        ##  as an example, when `complete -p` prints:
-        ##
-        ##      $ complete -p
-        ##      complete -F _known_hosts "/tmp/aaa   bbb"
-        ##
-        ##  copy-paste running the above output gives wrong result:
-        ##
-        ##      $ complete -F _known_hosts "/tmp/aaa   bbb"
-        ##      $ complete -p
-        ##      complete -F _known_hosts /tmp/aaa   bbb
-        ##
-        ##  the correct command to give the same `complete -p` result is:
-        ##
-        ##      $ complete -F _known_hosts '"/tmp/aaa   bbb"'
-        ##      $ complete -p
-        ##      complete -F _known_hosts "/tmp/aaa   bbb"
-        ##
-        ##  to see another issue, this command gives a different result:
-        ##
-        ##      $ complete -F _known_hosts '/tmp/aaa\ \ \ bbb'
-        ##      $ complete -p
-        ##      complete -F _known_hosts /tmp/aaa\ \ \ bbb
-        ##
-        ##  note that these two `complete -p` results are *not* the same:
-        ##
-        ##      complete -F _known_hosts "/tmp/aaa   bbb"
-        ##      complete -F _known_hosts /tmp/aaa\ \ \ bbb
-        ##
-        ##  despite this is true:
-        ##
-        ##      [[ "/tmp/aaa   bbb" == /tmp/aaa\ \ \ bbb ]]
-        ##
-        ##  so we must parse the `complete -p` result and run parsed result;
-        ##
-        ##  using `_split_cmd_line` on a cspec looks fine, because it contains
-        ##  only one command without redirections or assignments, also without
-        ##  command substitutions, etc.; we should be able to rerun this cspec
-        ##  in an argv fashion (eg: `"${cspec_args[@]}"`);
-        __compal__split_cmd_line "$cspec"
-        local cspec_args=( "${__compal__retval[@]}" )
+        ##  skip default cspec;
+        [[ "$cspec" != "$def_cspec" ]] || continue
 
-        ##  ensure this is indeed a cspec;
-        [[ "${cspec_args[0]}" == "complete" ]] || continue
-
-        ##  ignore `complete -D` cspec; such is irrelevant because this script
-        ##  does not change the default completion;
-        ! __compal__inarr "-D" "${cspec_args[@]}" || continue
-
-        ##  ignore `complete -F _complete_alias` cspecs; the reason is, vanilla
-        ##  completions must be alias-free; although it is better to check with
-        ##  `$cspec_args`, string `-F _complete_alias` is very unlikely part of
-        ##  a command name; so we just check with `$cspec`, which is easier;
+        ##  skip `-F _complete_alias` cspecs;
         [[ "$cspec" != *"-F _complete_alias"* ]] || continue
 
-        ##  get the command being completed by this cspec;
-        local cspec_cmd="${cspec_args[-1]}"
+        ##  now we have a vanilla cspec; save it in`_raw_vanilla_cspecs`;
+        __compal__raw_vanilla_cspecs["$cspec"]=""
 
-        ##  save this vanilla completion into `_vanilla_cspecs`;
-        __compal__vanilla_cspecs["$cspec_cmd"]="$cspec"
-
-    done < <(complete -p)
+    done < <(complete -p 2>/dev/null)
 }
 
 ##  completion function for non-alias commands; normally, the mere invocation of
