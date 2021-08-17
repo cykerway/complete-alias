@@ -701,6 +701,7 @@ __compal__unmask_alias_auto() {
                 local _cspec_cmd="${_cspec_args[-1]}"
                 if [[ "$_cspec_cmd" == "$cmd" ]]; then
                     __compal__vanilla_cspecs["$_cspec_cmd"]="$_cspec"
+                    unset __compal__raw_vanilla_cspecs["$_cspec"]
                     __compal__run_cspec_args "${_cspec_args[@]}"
                     return
                 fi
