@@ -65,6 +65,20 @@ to complete alias `sctl` aliased to `systemctl`:
     condreload
     ...
 
+## config
+
+to config `complete-alias`, set these envars *before* sourcing the main script:
+
+-   `COMPAL_AUTO_UNMASK`
+
+    this is a bool; default is `0`; when set to `1`, enables auto unmask; when
+    set to `0`, uses manual unmask;
+
+    auto unmask automatically manages non-alias command completions, but incurs
+    a small overhead on source; manual unmask is the traditional way of setting
+    non-alias command completions, which is static and faster but requires user
+    intervention if the preset is not satisfying;
+
 ## compat
 
 -   support for gnu bash(>=4.4) on linux is aimed;
