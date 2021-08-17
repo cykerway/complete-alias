@@ -475,9 +475,8 @@ __compal__expand_alias() {
         local cmd="${COMP_WORDS[$beg]}"
 
         ##  get alias body;
-        local str0="$(
-            alias "$cmd" | command sed -E 's/[^=]*=//' | command xargs
-        )"
+        local str0; str0="$(alias "$cmd")"
+        str0="$(echo "${str0#*=}" | command xargs)"
 
         ##  split alias body into words;
         __compal__split_cmd_line "$str0"
