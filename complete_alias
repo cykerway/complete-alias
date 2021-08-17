@@ -118,6 +118,17 @@ __compal__inarr() {
 ##  too complicated when written in bash; we will support additional use cases
 ##  as they show up and prove worthy;
 ##
+##  another reason we not pursue full compatibility is, even bash itself fails
+##  on some use cases, such as `ping 2>&1` and `ping &>/dev/null`; ironically,
+##  if we define an alias and complete using `_complete_alias`, then it works:
+##
+##      $ alias ping='ping 2>&1'
+##      $ complete -F _complete_alias ping
+##      $ ping <tab>
+##      {ip}
+##      {ip}
+##      {ip}
+##
 ##  warn: the output of this function is *not* a faithful split of the input;
 ##  this function drops redirections and assignments, and only keeps the last
 ##  command in the last pipeline;
@@ -383,6 +394,7 @@ __compal__split_cmd_line() {
 ##  -   (fail) `> /dev/null ping`
 ##  -   (work) `&>/dev/null ping`
 ##  -   (work) `2>&1 >/dev/null ping`
+##  -   (work) `2>&1 ping`
 ##  -   (work) `2>/dev/null ping`
 ##  -   (work) `>/dev/null ping`
 ##  -   (work) `FOO=foo true && BAR=bar ping`
@@ -394,9 +406,14 @@ __compal__split_cmd_line() {
 ##  -   (work) `ping 2> /dev/null`
 ##  -   (work) `ping 2>&1 > /dev/null`
 ##  -   (work) `ping 2>&1 >/dev/null`
+##  -   (work) `ping 2>&1`
 ##  -   (work) `ping 2>/dev/null`
 ##  -   (work) `ping > /dev/null`
 ##  -   (work) `ping >/dev/null`
+##
+##  these failed examples are not an emergency because you can easily find their
+##  equivalents in those working ones; we will check for emergency if new failed
+##  examples are added in the future;
 ##
 ##  $1
 ##  :   command line string;
