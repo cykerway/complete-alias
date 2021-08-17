@@ -60,6 +60,11 @@ __compal__refcnt=0
 ##
 declare -A __compal__vanilla_cspecs
 
+##  an indexed array of raw vanilla completions; these raw completions will be
+##  parsed and loaded into `_vanilla_cspecs` on use; we need this lazy loading
+##  because parsing all cspecs on sourcing incurs a large performance overhead;
+declare -a __compal__raw_vanilla_cspecs
+
 ##  ============================================================================
 ##  # functions
 ##  ============================================================================
