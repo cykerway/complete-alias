@@ -166,6 +166,36 @@ to config `complete-alias`, set these envars *before* sourcing the main script:
         ...
         complete -F _complete_alias "${!BASH_ALIASES[@]}"
 
+-   how to complete my alias with the completion rules of *another command*?
+
+    Define configuration function `_complete_alias_overrides` *after* all
+    aliases have been defined and completed:
+
+        _complete_alias_overrides() {
+            echo alias_name command_to_inherit_completion_from
+        }
+
+    for example, to complete alias `g` aliased to
+    `source /path/to/custom-wrapper-script.sh` with the completion rules of
+    command `git`:
+
+    1.   define the alias as you would normally do:
+
+        alias g="source /path/to/custom-wrapper-script.sh"
+
+    2.    complete the alias:
+
+        complete -F _complete_alias g
+
+    3.    Specify the command to inherit the completion rules from by
+          defining the configuration function:
+
+        _complete_alias_overrides() {
+            echo g git
+        }
+
+    then alias `g` will inherit the completion rules of the command `git`.
+
 -   `sudo` completion is not working correctly?
 
     there is a known case with `sudo` that can go wrong; for example:

@@ -517,6 +517,18 @@ __compal__expand_alias() {
         local str0; str0="$(alias "$cmd")"
         str0="$(echo "${str0#*=}" | command xargs)"
 
+        ##  override alias body using config function _complete_alias_overrides;
+        ##  we need this if we want to use the completion rules of another
+        ##  one-word command instead of the completion rules of the command
+        ##  embedded in the original alias body
+        if type _complete_alias_overrides &> /dev/null; then
+            while IFS= read -r pair; do
+                if [[ $(echo "$pair" | cut -d" " -f1 | grep -w "$cmd") ]]; then
+                    str0="$(echo "$pair" | cut -d" " -f2)"
+                fi
+            done < <(_complete_alias_overrides)
+        fi
+
         ##  split alias body into words;
         __compal__split_cmd_line "$str0"
         local words0=( "${__compal__retval[@]}" )
