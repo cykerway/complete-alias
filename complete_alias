@@ -76,7 +76,7 @@ declare -A __compal__vanilla_cspecs
 ##
 ##      _raw_vanilla_cspecs["complete -F _longopt tee"]=""
 ##      _raw_vanilla_cspecs["complete -c type"]=""
-##      _raw_vanilla_cspecs[""complete -a unalias"]=""
+##      _raw_vanilla_cspecs["complete -a unalias"]=""
 ##      ...
 ##
 declare -A __compal__raw_vanilla_cspecs
