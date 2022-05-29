@@ -187,6 +187,24 @@ __compal__inarr() {
     return 1
 }
 
+##  get alias body from alias name;
+##
+##  this is made a separate function so that users can override this function to
+##  provide alternate alias body for specific aliases; such aliases would run as
+##  one thing but complete as another; this could be weird and confusing so this
+##  is not formally documented;
+##
+##  $1
+##  :   alias name;
+##  $?
+##  :   alias body;
+__compal__get_alias_body() {
+    local cmd; cmd="$1"
+
+    local body; body="$(alias "$cmd")"
+    echo "${body#*=}" | command xargs
+}
+
 ##  split command line into words;
 ##
 ##  the `bash` reference implementation shows how bash splits command line into
@@ -514,8 +532,7 @@ __compal__expand_alias() {
         local cmd="${COMP_WORDS[$beg]}"
 
         ##  get alias body;
-        local str0; str0="$(alias "$cmd")"
-        str0="$(echo "${str0#*=}" | command xargs)"
+        local str0; str0="$(__compal__get_alias_body "$cmd")"
 
         ##  split alias body into words;
         __compal__split_cmd_line "$str0"
