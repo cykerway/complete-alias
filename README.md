@@ -166,7 +166,42 @@ to config `complete-alias`, set these envars *before* sourcing the main script:
         ...
         complete -F _complete_alias "${!BASH_ALIASES[@]}"
 
--   `sudo` completion is not working correctly?
+-   what are special characters in alias body?
+
+    these characters have special meanings and may cause errors when used in
+    alias body (this is not a complete list):
+
+    -   newline (`\n`):
+
+        we do not allow alias body to contain the newline character; this limits
+        the cases to consider and makes smaller, faster code; if your alias goes
+        more than 80 characters, consider making it a function;
+
+    -   backquote (`` ` ``):
+
+        avoid the old-style backquote form `` `command` `` of command
+        substitution as much as possible; instead, use the `$(command)` form;
+        the backquote form is more tricky and less legible when nested in quotes
+        or another command substitution; we do not intend to fully support
+        backquotes;
+
+    -   backslash (`\`):
+
+        avoid backslashes unless you absolutely have to use them; they are
+        mostly used to escape a character; we have double quotes that can do the
+        same; the bash manual is not complete on where a backslash is special
+        and where it is literal; and we may make mistakes on its interpretation;
+
+    -   colon (`:`):
+
+        a colon seems innocent but is special to word completion code: it is one
+        of the characters that breaks words for the completer; you can read more
+        about it at [this link][bash-faq]; however, we do not guarantee the same
+        treatment of colons here as there; we treat a colon as a word breaker in
+        the outmost scope and a literal otherwise; if you always want it to be a
+        literal, just quote it;
+
+-   why is `sudo` completion not working correctly?
 
     there is a known case with `sudo` that can go wrong; for example:
 
@@ -236,6 +271,7 @@ this program.  If not, see <http://www.gnu.org/licenses/>.
 
 [GPLv3]: https://www.gnu.org/licenses/gpl-3.0.txt
 [bash-completion]: https://github.com/scop/bash-completion
+[bash-faq]: https://tiswww.case.edu/php/chet/bash/FAQ
 [bash_completion]: https://raw.githubusercontent.com/scop/bash-completion/master/bash_completion
 [gfw]: https://gitforwindows.org/
 [msys2-mirror]: http://repo.msys2.org/

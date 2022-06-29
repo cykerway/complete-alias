@@ -236,6 +236,29 @@ __compal__get_alias_body() {
 ##      {ip}
 ##      {ip}
 ##
+##  backslash: a non-quoted backslash (`\`) preserves the literal value of the
+##  next character that follows with the exception of `<newline>`; a backslash
+##  enclosed in single quotes loses such special meaning; a backslash enclosed
+##  in double quotes retains such special meaning only when followed by one of
+##  the following (5) characters:
+##
+##      $ ` " \ <newline>
+##
+##  we do not allow `<newline>` in alias body; this simplifies our argument: a
+##  non-quoted backslash always preserves next character; a backslash enclosed
+##  in double quotes only preserves the above 4 characters (minus `<newline>`);
+##
+##  when a command substitution is enclosed in double quotes, backslash within
+##  the command substitution may retain such special meaning, despite whatever
+##  bash manual says; compare:
+##
+##      "`\"`"
+##      "$(\")"
+##
+##  in the first form the backslash is not literal even though not followed by
+##  characters mentioned in section command substitution, bash manual; we will
+##  not handle backquote correctly in this case; as an advice, avoid backquote;
+##
 ##  warn: the output of this function is *not* a faithful split of the input;
 ##  this function drops redirections and assignments, and only keeps the last
 ##  command in the last pipeline;
@@ -319,17 +342,7 @@ __compal__split_cmd_line() {
                 sta+=( '"' )
             elif [[ "'" == "${str:j:1}" ]]; then
                 sta+=( "'" )
-            elif [[ '\ ' == "${str:j:2}" ]]; then
-                (( j++ ))
-            elif [[ '\$' == "${str:j:2}" ]]; then
-                (( j++ ))
-            elif [[ '\`' == "${str:j:2}" ]]; then
-                (( j++ ))
-            elif [[ '\"' == "${str:j:2}" ]]; then
-                (( j++ ))
-            elif [[ '\\' == "${str:j:2}" ]]; then
-                (( j++ ))
-            elif [[ "\'" == "${str:j:2}" ]]; then
+            elif [[ '\' == "${str:j:1}" ]]; then
                 (( j++ ))
             elif [[ '&>' == "${str:j:2}" ]]; then
                 found_redass=1
@@ -376,17 +389,7 @@ __compal__split_cmd_line() {
                 sta+=( '"' )
             elif [[ "'" == "${str:j:1}" ]]; then
                 sta+=( "'" )
-            elif [[ '\ ' == "${str:j:2}" ]]; then
-                (( j++ ))
-            elif [[ '\$' == "${str:j:2}" ]]; then
-                (( j++ ))
-            elif [[ '\`' == "${str:j:2}" ]]; then
-                (( j++ ))
-            elif [[ '\"' == "${str:j:2}" ]]; then
-                (( j++ ))
-            elif [[ '\\' == "${str:j:2}" ]]; then
-                (( j++ ))
-            elif [[ "\'" == "${str:j:2}" ]]; then
+            elif [[ '\' == "${str:j:1}" ]]; then
                 (( j++ ))
             fi
         elif [[ "${sta[-1]}" == '}' ]]; then
@@ -405,17 +408,7 @@ __compal__split_cmd_line() {
                 sta+=( '"' )
             elif [[ "'" == "${str:j:1}" ]]; then
                 sta+=( "'" )
-            elif [[ '\ ' == "${str:j:2}" ]]; then
-                (( j++ ))
-            elif [[ '\$' == "${str:j:2}" ]]; then
-                (( j++ ))
-            elif [[ '\`' == "${str:j:2}" ]]; then
-                (( j++ ))
-            elif [[ '\"' == "${str:j:2}" ]]; then
-                (( j++ ))
-            elif [[ '\\' == "${str:j:2}" ]]; then
-                (( j++ ))
-            elif [[ "\'" == "${str:j:2}" ]]; then
+            elif [[ '\' == "${str:j:1}" ]]; then
                 (( j++ ))
             fi
         elif [[ "${sta[-1]}" == '`' ]]; then
@@ -432,17 +425,7 @@ __compal__split_cmd_line() {
                 sta+=( '"' )
             elif [[ "'" == "${str:j:1}" ]]; then
                 sta+=( "'" )
-            elif [[ '\ ' == "${str:j:2}" ]]; then
-                (( j++ ))
-            elif [[ '\$' == "${str:j:2}" ]]; then
-                (( j++ ))
-            elif [[ '\`' == "${str:j:2}" ]]; then
-                (( j++ ))
-            elif [[ '\"' == "${str:j:2}" ]]; then
-                (( j++ ))
-            elif [[ '\\' == "${str:j:2}" ]]; then
-                (( j++ ))
-            elif [[ "\'" == "${str:j:2}" ]]; then
+            elif [[ '\' == "${str:j:1}" ]]; then
                 (( j++ ))
             fi
         elif [[ "${sta[-1]}" == "'" ]]; then
