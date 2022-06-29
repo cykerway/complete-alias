@@ -174,8 +174,8 @@ to config `complete-alias`, set these envars *before* sourcing the main script:
     -   newline (`\n`):
 
         we do not allow alias body to contain the newline character; this limits
-        the cases to consider and makes smaller, faster code; if your alias goes
-        more than 80 characters, consider making it a function;
+        the cases to consider and makes smaller, faster code; we treat a newline
+        as a word breaker in the outmost scope, but you better not rely on this;
 
     -   backquote (`` ` ``):
 
